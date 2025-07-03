@@ -569,21 +569,55 @@ class MultilayerEON:
         return (total_utilization / len(self.lightpaths)) * 100
 
 
-def create_sample_network():
-    """Create a sample network with 56 nodes and 72 links as in the paper"""
+def create_sample_network(filename: str = "network_topology.txt") -> MultilayerEON:
+    """Create and return a MultilayerEON instance from a text file with format:
+    First line: n m  # number of nodes and edges
+    Following m lines: s t d  # source, target, distance (km)
+    """
     network = MultilayerEON()
 
-    # Add nodes (simplified - in practice would match the actual topology)
-    for i in range(1, 57):
-        network.add_node(i)
+    try:
+        with open(filename, 'r') as f:
+            # Read first line
+            first_line = f.readline().strip()
+            if not first_line:
+                raise ValueError("Empty file")
 
-    # Add fiber links (simplified - in practice would match the actual topology)
-    # For now, just create a connected network with 72 links
-    nodes = list(range(1, 57))
-    for i in range(72):
-        source, dest = random.sample(nodes, 2)
-        length = random.uniform(1, 100)  # random length between 1-100 km
-        network.add_fiber_link(source, dest, length)
+            # Parse n and m
+            try:
+                n, m = map(int, first_line.split())
+            except ValueError:
+                raise ValueError("First line should contain two integers")
+
+            # Create nodes
+            for node_id in range(1, n + 1):
+                network.add_node(node_id)
+
+            # Read edges
+            edges_added = 0
+            for line_num, line in enumerate(f, start=2):  # line numbers start at 2
+                line = line.strip()
+                if not line:
+                    continue  # skip empty lines
+
+                try:
+                    s, t, d = map(int, line.split())
+                    if s < 1 or s > n or t < 1 or t > n:
+                        raise ValueError(f"Node ID out of range in line {line_num}")
+                    if d <= 0:
+                        raise ValueError(f"Distance must be positive in line {line_num}")
+
+                    network.add_fiber_link(s, t, d)
+                    edges_added += 1
+                except ValueError as e:
+                    raise ValueError(f"Error in line {line_num}: {str(e)}")
+
+            # Verify we read the correct number of edges
+            if edges_added != m:
+                raise ValueError(f"Expected {m} edges but found {edges_added}")
+
+    except IOError as e:
+        raise IOError(f"Error reading file {filename}: {str(e)}")
 
     return network
 
