@@ -108,7 +108,7 @@ class MultilayerEON:
         self.fiber_links.append(FiberLink(source, dest, length))
         self.fiber_links.append(FiberLink(dest, source, length))  # bidirectional
 
-    def generate_demand(self, demand_id: int) -> EthernetDemand:
+    def generate_demand(self, demand_id: int) -> EthernetDemand: # zzg : 流量生成需要重写
         """Generate a random Ethernet demand"""
         # Randomly select source and destination nodes
         nodes = list(self.nodes.keys())
@@ -127,34 +127,101 @@ class MultilayerEON:
 
     def find_k_shortest_paths(self, source: int, dest: int, k: int = 3) -> List[List[int]]:
         """Find K shortest paths between source and destination using Yen's algorithm"""
-        # Simplified implementation - in practice would use a more efficient algorithm
-        # This is a placeholder for the actual implementation
 
-        # For now, just return up to k simple paths
-        paths = []
+        # First, find the shortest path using Dijkstra's algorithm
+        def dijkstra_shortest_path(adj: Dict[int, List[Tuple[int, float]]],
+                                   source: int, dest: int,
+                                   blocked_edges: Set[Tuple[int, int]] = None) -> Optional[List[int]]:
+            """Dijkstra's algorithm with optional edge blocking"""
+            heap = [(0, source, [])]  # (distance, node, path)
+            visited = set()
+            blocked_edges = blocked_edges or set()
 
-        # Try to find direct path if exists
-        if any(link.source == source and link.dest == dest for link in self.fiber_links):
-            paths.append([source, dest])
+            while heap:
+                dist, node, path = heapq.heappop(heap)
+                if node in visited:
+                    continue
+                visited.add(node)
 
-        # Find paths with 1 intermediate node
-        for node in self.nodes:
-            if node != source and node != dest:
-                if (any(link.source == source and link.dest == node for link in self.fiber_links) and
-                        any(link.source == node and link.dest == dest for link in self.fiber_links)):
-                    paths.append([source, node, dest])
+                new_path = path + [node]
 
-        # Find paths with 2 intermediate nodes
-        for node1 in self.nodes:
-            for node2 in self.nodes:
-                if (node1 != source and node1 != dest and node2 != source and node2 != dest and node1 != node2):
-                    if (any(link.source == source and link.dest == node1 for link in self.fiber_links) and
-                            any(link.source == node1 and link.dest == node2 for link in self.fiber_links) and
-                            any(link.source == node2 and link.dest == dest for link in self.fiber_links)):
-                        paths.append([source, node1, node2, dest])
+                if node == dest:
+                    return new_path
 
-        # Return up to k paths
-        return paths[:k]
+                for neighbor, length in adj[node]:
+                    if (node, neighbor) not in blocked_edges:
+                        heapq.heappush(heap, (dist + length, neighbor, new_path))
+
+            return None
+
+        # Build adjacency list with distances
+        adj = defaultdict(list)
+        for link in self.fiber_links:
+            adj[link.source].append((link.dest, link.length))
+
+        # Get the shortest path
+        shortest_path = dijkstra_shortest_path(adj, source, dest)
+        if not shortest_path:
+            return []
+
+        # Initialize list of k shortest paths
+        k_paths = [shortest_path]
+        candidates = []
+
+        for _ in range(1, k):
+            # The previous path to work on
+            prev_path = k_paths[-1]
+
+            # Iterate through each node in the previous path (except the last one)
+            for i in range(len(prev_path) - 1):
+                # The spur node is the i-th node in the previous path
+                spur_node = prev_path[i]
+
+                # The root path is from source to spur node
+                root_path = prev_path[:i + 1]
+
+                # Initialize blocked edges
+                blocked_edges = set()
+
+                # Block all edges that are part of the previous paths that share the same root path
+                for path in k_paths:
+                    if len(path) > i and root_path == path[:i + 1]:
+                        u = path[i]
+                        v = path[i + 1] if i + 1 < len(path) else None
+                        if v:
+                            blocked_edges.add((u, v))
+
+                # Find the spur path from spur node to destination
+                spur_path = dijkstra_shortest_path(adj, spur_node, dest, blocked_edges)
+
+                if spur_path:
+                    # Combine root path and spur path
+                    total_path = root_path[:-1] + spur_path
+
+                    # Check if this path is already in candidates
+                    if total_path not in candidates:
+                        # Calculate total distance
+                        total_distance = 0
+                        for j in range(len(total_path) - 1):
+                            u = total_path[j]
+                            v = total_path[j + 1]
+                            for neighbor, length in adj[u]:
+                                if neighbor == v:
+                                    total_distance += length
+                                    break
+
+                        # Add to candidates
+                        heapq.heappush(candidates, (total_distance, total_path))
+
+            # If there are no candidates, we've found all possible paths
+            if not candidates:
+                break
+
+            # Add the shortest candidate path to k_paths
+            _, new_path = heapq.heappop(candidates)
+            k_paths.append(new_path)
+
+        return k_paths[:k]
 
     def find_parallel_els(self, source: int, dest: int) -> List[Lightpath]:
         """Find existing lightpaths between source and dest with available capacity"""
