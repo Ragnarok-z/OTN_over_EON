@@ -3,7 +3,7 @@ import math
 import random
 from collections import defaultdict
 from typing import List, Dict, Tuple, Set, Optional
-
+import numpy as np
 
 class NetworkNode:
     def __init__(self, node_id: int, otn_switching_capacity: float):
@@ -43,7 +43,7 @@ class Lightpath:
 
 class EthernetDemand:
     def __init__(self, demand_id: int, source: int, dest: int, traffic_class: str,
-                 timeslots_needed: int, holding_time: float):
+                 timeslots_needed: int, holding_time: float,arrival_time: float):
         self.demand_id = demand_id
         self.source = source
         self.dest = dest
@@ -51,6 +51,7 @@ class EthernetDemand:
         self.timeslots_needed = timeslots_needed
         self.holding_time = holding_time
         self.blocked = False
+        self.arrival_time = arrival_time
         self.path = None  # will store the path if not blocked
 
 
@@ -108,22 +109,62 @@ class MultilayerEON:
         self.fiber_links.append(FiberLink(source, dest, length))
         self.fiber_links.append(FiberLink(dest, source, length))  # bidirectional
 
-    def generate_demand(self, demand_id: int) -> EthernetDemand: # zzg : 流量生成需要重写
-        """Generate a random Ethernet demand"""
-        # Randomly select source and destination nodes
+    def generate_demands(self, n: int, random_seed: int = None,
+                         arrival_rate: float = 1.0, holding_rate: float = 1.0) -> List[EthernetDemand]:
+        """
+        Generate n demands with:
+        - Arrival times following Poisson process (parameter λ=arrival_rate)
+        - Holding times following Exponential distribution (parameter μ=holding_rate)
+        - Controlled randomness using random_seed
+
+        Args:
+            n: Number of demands to generate
+            random_seed: Seed for random number generation (for reproducibility)
+            arrival_rate: λ parameter for Poisson arrival process
+            holding_rate: μ parameter for Exponential holding times
+
+        Returns:
+            List of generated EthernetDemand objects with sequential demand_ids
+        """
+        if random_seed is not None:
+            np.random.seed(random_seed)
+            random.seed(random_seed)
+
+        # Generate inter-arrival times (Exponential with rate λ)
+        inter_arrivals = np.random.exponential(scale=1 / arrival_rate, size=n)
+
+        # Calculate arrival times (cumulative sum of inter-arrivals)
+        arrival_times = np.cumsum(inter_arrivals)
+
+        # Generate holding times (Exponential with rate μ)
+        holding_times = np.random.exponential(scale=1 / holding_rate, size=n)
+
+        demands = []
         nodes = list(self.nodes.keys())
-        source, dest = random.sample(nodes, 2)
 
-        # Randomly select traffic class weighted by arrival rates
-        traffic_class = random.choices(
-            list(self.traffic_classes.keys()),
-            weights=[self.traffic_classes[tc]['arrival_rate'] for tc in self.traffic_classes]
-        )[0]
+        for i in range(n):
+            # Randomly select source and destination
+            source, dest = random.sample(nodes, 2)
 
-        timeslots_needed = self.traffic_classes[traffic_class]['timeslots']
-        holding_time = self.traffic_classes[traffic_class]['holding_time']
+            # Randomly select traffic class weighted by relative rates
+            traffic_class = random.choices(
+                list(self.traffic_classes.keys()),
+                weights=[self.traffic_classes[tc]['arrival_rate'] for tc in self.traffic_classes]
+            )[0]
 
-        return EthernetDemand(demand_id, source, dest, traffic_class, timeslots_needed, holding_time)
+            timeslots_needed = self.traffic_classes[traffic_class]['timeslots']
+
+            demands.append(EthernetDemand(
+                demand_id=i,
+                source=source,
+                dest=dest,
+                traffic_class=traffic_class,
+                timeslots_needed=timeslots_needed,
+                holding_time=holding_times[i],
+                arrival_time=arrival_times[i]  # Adding arrival_time to the demand object
+            ))
+
+        return demands
 
     def find_k_shortest_paths(self, source: int, dest: int, k: int = 3) -> List[List[int]]:
         """Find K shortest paths between source and destination using Yen's algorithm"""
@@ -223,20 +264,21 @@ class MultilayerEON:
 
         return k_paths[:k]
 
-    def find_parallel_els(self, source: int, dest: int) -> List[Lightpath]:
+    def find_parallel_els(self, source: int, dest: int, damand: EthernetDemand) -> List[Lightpath]:
         """Find existing lightpaths between source and dest with available capacity"""
         parallel_els = []
         for lp in self.lightpaths:
-            if lp.source == source and lp.dest == dest and lp.can_accommodate(1.0):  # simplified capacity check
+            # zzg 修改为需要大于等于请求的需求才可以
+            if lp.source == source and lp.dest == dest and lp.can_accommodate(damand.timeslots_needed * 10):
                 parallel_els.append(lp)
         return parallel_els
 
-    def find_parallel_eels(self, source: int, dest: int) -> List[Lightpath]:
+    def find_parallel_eels(self, source: int, dest: int, damand: EthernetDemand) -> List[Lightpath]:
         """Find extendable existing lightpaths between source and dest"""
         # Simplified implementation - in practice would check if spectrum can be extended
         parallel_eels = []
         for lp in self.lightpaths:
-            if lp.source == source and lp.dest == dest and not lp.can_accommodate(1.0):
+            if lp.source == source and lp.dest == dest and not lp.can_accommodate(damand.timeslots_needed * 10):
                 # Check if we can extend spectrum allocation
                 # For now, just return all lightpaths that are at capacity
                 parallel_eels.append(lp)
@@ -361,17 +403,22 @@ class MultilayerEON:
                     continue  # already added
 
                 # Check for existing lightpaths (ELs)
-                els = self.find_parallel_els(source, dest)
+                els = self.find_parallel_els(source, dest, demand)
                 if els:
                     # Select the best EL (simplified: first one with enough capacity)
+                    # zzg 修改为选择剩余容量最小的el作为best_el, p8,c2,p3
                     best_el = els[0]
+                    for el in els:
+                        if el.capacity - el.used_capacity < best_el.capacity - best_el.used_capacity:
+                            best_el=el
                     cag_edges[(source, dest)] = best_el
                     continue
 
                 # Check for extendable existing lightpaths (EELs)
-                eels = self.find_parallel_eels(source, dest)
+                eels = self.find_parallel_eels(source, dest, demand)
                 if eels:
                     # Select the best EEL (simplified: first one)
+                    # zzg 修改为选择ABP最小的作为best_eel, p8,c2,p3
                     best_eel = eels[0]
                     cag_edges[(source, dest)] = best_eel
                     continue
@@ -519,10 +566,13 @@ class MultilayerEON:
 
     def simulate(self, num_demands: int = 1000, policy: str = 'MinPB', k: int = 3, max_hops: int = 5):
         """Run simulation with given parameters"""
-        for i in range(num_demands):
-            demand = self.generate_demand(i)
-            self.demands.append(demand)
+
+        # Generate 1000 demands with seed=42, λ=1.0, μ=1.0
+        self.demands = self.generate_demands(n=1000, random_seed=42,
+                                           arrival_rate=1.0, holding_rate=1.0)
+        for demand in self.demands:
             self.multilayer_rsa(demand, policy, k, max_hops)
+
 
     def get_performance_metrics(self) -> Dict:
         """Calculate performance metrics"""
@@ -626,10 +676,10 @@ def run_performance_evaluation():
     """Run performance evaluation with different policies"""
     policies = ['MinEn', 'MaxMux', 'MaxSE', 'MinPB']
     results = {policy: {} for policy in policies}
-
+    topology_file = "./topology/topology_example.txt"
     for policy in policies:
         print(f"Running simulation with {policy} policy...")
-        network = create_sample_network()
+        network = create_sample_network(topology_file)
         network.simulate(num_demands=1000, policy=policy)
         metrics = network.get_performance_metrics()
         results[policy] = metrics
