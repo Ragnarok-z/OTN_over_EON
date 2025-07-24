@@ -17,7 +17,7 @@ class TrafficClass(Enum):
 
 
 # Transponder operational modes (from Table V in the paper)
-TRANSPONDER_MODES = [
+TRANSPONDER_MODES_original = [
     {"capacity": 200, "bitrate": 200, "baudrate": 95, "fs_required": 19, "max_spans": 125},
     {"capacity": 300, "bitrate": 300, "baudrate": 95, "fs_required": 19, "max_spans": 88},
     {"capacity": 400, "bitrate": 400, "baudrate": 95, "fs_required": 19, "max_spans": 54},
@@ -31,6 +31,23 @@ TRANSPONDER_MODES = [
     {"capacity": 400, "bitrate": 400, "baudrate": 56, "fs_required": 12, "max_spans": 10},
     {"capacity": 100, "bitrate": 100, "baudrate": 35, "fs_required": 8, "max_spans": 75},
     {"capacity": 200, "bitrate": 200, "baudrate": 35, "fs_required": 8, "max_spans": 16}
+]
+
+# selects the transponder operational mode that minimizes spectral usage while maximizes data rate
+TRANSPONDER_MODES = [
+    {"capacity": 200, "bitrate": 200, "baudrate": 35, "fs_required": 8, "max_spans": 16},
+    {"capacity": 100, "bitrate": 100, "baudrate": 35, "fs_required": 8, "max_spans": 75},
+    {"capacity": 400, "bitrate": 400, "baudrate": 56, "fs_required": 12, "max_spans": 10},
+    {"capacity": 300, "bitrate": 300, "baudrate": 56, "fs_required": 12, "max_spans": 34},
+    {"capacity": 200, "bitrate": 200, "baudrate": 56, "fs_required": 12, "max_spans": 61},
+    {"capacity": 100, "bitrate": 100, "baudrate": 56, "fs_required": 12, "max_spans": 130},
+    {"capacity": 800, "bitrate": 800, "baudrate": 95, "fs_required": 19, "max_spans": 4},
+    {"capacity": 700, "bitrate": 700, "baudrate": 95, "fs_required": 19, "max_spans": 9},
+    {"capacity": 600, "bitrate": 600, "baudrate": 95, "fs_required": 19, "max_spans": 18},
+    {"capacity": 500, "bitrate": 500, "baudrate": 95, "fs_required": 19, "max_spans": 35},
+    {"capacity": 400, "bitrate": 400, "baudrate": 95, "fs_required": 19, "max_spans": 54},
+    {"capacity": 300, "bitrate": 300, "baudrate": 95, "fs_required": 19, "max_spans": 88},
+    {"capacity": 200, "bitrate": 200, "baudrate": 95, "fs_required": 19, "max_spans": 125},
 ]
 
 # Traffic engineering policy coefficients (from Table IV in the paper)
@@ -96,6 +113,9 @@ class Lightpath:
 
     def can_accommodate(self, demand):
         return (self.used_capacity + demand.traffic_class.value) <= self.capacity
+
+    def remaining_capacity(self):
+        return self.capacity - self.used_capacity
 
     def add_demand(self, demand):
         if self.can_accommodate(demand):
@@ -309,6 +329,7 @@ class Network:
         required_capacity = demand.traffic_class.value
         path_length = self.path_length(path_G0)
 
+        # selects the transponder operational mode that minimizes spectral usage while maximizes data rate
         for mode in TRANSPONDER_MODES:
             if mode["capacity"] >= required_capacity and path_length <= mode["max_spans"]:
                 # Check FS availability
@@ -366,8 +387,7 @@ class CAG:
         for path in k_shortest_paths:
             for node in path:
                 if node != self.demand.source and node != self.demand.destination:
-                    if self.network.otn_switches[node]["used_capacity"] < self.network.otn_switches[node][
-                        "total_capacity"]:
+                    if self.network.otn_switches[node]["used_capacity"] < self.network.otn_switches[node]["total_capacity"]:
                         self.nodes.add(node)
 
         # Add edges between node pairs
@@ -380,11 +400,15 @@ class CAG:
                 existing_lps = self.network.find_existing_lightpaths(u, v)
                 if existing_lps:
                     # Select the best fit (simplified - just take the first one with enough capacity)
+                    # completed - selecting the EL that most closely meets the demand’s bandwidth requirements with minimal excess capacity.
+                    min_capacity, best_lp = -1, None
                     for lp in existing_lps:
                         if lp.can_accommodate(self.demand):
-                            self.edges[u][v] = {"type": "EL", "lightpath": lp}
-                            break
-                    continue
+                            if best_lp is None or lp.remaining_capacity() < min_capacity:
+                                min_capacity, best_lp = lp.remaining_capacity(), lp
+                    if best_lp:
+                        self.edges[u][v] = {"type": "EL", "lightpath": best_lp}
+                        continue
 
                 # Check for extendable lightpaths
                 extendable_lps = self.network.find_extendable_lightpaths(u, v, self.demand)
@@ -685,6 +709,9 @@ def run_experiments(topology_file, output_dir="results"):
     # Define traffic intensities (Erlang)
     traffic_intensities = range(10, 21, 2)
 
+    # Define number of demand
+    num_demands = 1000
+
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
 
@@ -706,7 +733,7 @@ def run_experiments(topology_file, output_dir="results"):
             print(f"  Testing policy: {policy}")
 
             # Create a new simulator for each run to ensure clean state
-            simulator = Simulator(Network(topology_file), intensity, 1000)
+            simulator = Simulator(Network(topology_file), intensity, num_demands)
             simulator.run(policy)
 
             # Store results
