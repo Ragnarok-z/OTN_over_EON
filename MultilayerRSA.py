@@ -277,8 +277,9 @@ class Network:
         # optimization
         start_fs, end_fs = 0, -1
         while True:
+            # print(start_fs,end_fs)
             ex_fs = end_fs+1
-            if end_fs >= 768:
+            if ex_fs >= 768:
                 break
             available = True
             for edge in edges_in_path:
@@ -291,6 +292,7 @@ class Network:
                     return (start_fs, end_fs)
             if not available:
                 start_fs = ex_fs + 1
+                end_fs = start_fs - 1
                 if start_fs + required_fs - 1 >= 768:
                     break
         return None
