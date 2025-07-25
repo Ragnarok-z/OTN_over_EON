@@ -33,6 +33,8 @@ TRANSPONDER_MODES_original = [
     {"capacity": 200, "bitrate": 200, "baudrate": 35, "fs_required": 8, "max_spans": 16}
 ]
 
+
+length_of_span = 80 # length of a span is 80km
 # selects the transponder operational mode that minimizes spectral usage while maximizes data rate
 TRANSPONDER_MODES = [
     {"capacity": 200, "bitrate": 200, "baudrate": 35, "fs_required": 8, "max_spans": 16},
@@ -272,22 +274,27 @@ class Network:
             edges_in_path.append((u, v))
 
         # Check each possible FS block
-        for start_fs in range(768 - required_fs + 1):
-            end_fs = start_fs + required_fs - 1
+        # optimization
+        start_fs, end_fs = 0, -1
+        while True:
+            ex_fs = end_fs+1
+            if end_fs >= 768:
+                break
             available = True
-
             for edge in edges_in_path:
-                for fs in range(start_fs, end_fs + 1):
-                    if self.fs_usage[edge][fs]:
-                        available = False
-                        break
-                if not available:
+                if self.fs_usage[edge][ex_fs]:
+                    available = False
                     break
-
             if available:
-                return (start_fs, end_fs)
-
+                end_fs = ex_fs
+                if end_fs - start_fs + 1 == required_fs:
+                    return (start_fs, end_fs)
+            if not available:
+                start_fs = ex_fs + 1
+                if start_fs + required_fs - 1 >= 768:
+                    break
         return None
+
 
     def allocate_fs_block(self, path, fs_block):
         start_fs, end_fs = fs_block
@@ -331,7 +338,7 @@ class Network:
 
         # selects the transponder operational mode that minimizes spectral usage while maximizes data rate
         for mode in TRANSPONDER_MODES:
-            if mode["capacity"] >= required_capacity and path_length <= mode["max_spans"]:
+            if mode["capacity"] >= required_capacity and path_length <= mode["max_spans"] * length_of_span:
                 # Check FS availability
                 fs_block = self.find_available_fs_block(path_G0, mode["fs_required"])
                 if fs_block:
