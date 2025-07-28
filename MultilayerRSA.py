@@ -716,10 +716,10 @@ def run_experiments(topology_file, output_dir="results"):
     network = Network(topology_file)
 
     # Define traffic intensities (Erlang)
-    traffic_intensities = range(10, 21, 2)
+    traffic_intensities = range(300, 510, 20)
 
     # Define number of demand
-    num_demands = 1000
+    num_demands = 10000
 
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
