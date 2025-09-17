@@ -52,10 +52,10 @@ class CAG:
 
                 # Check for extendable lightpaths
                 extendable_lps = self.network.find_extendable_lightpaths(u, v, self.demand)
-                # if extendable_lps:
-                #     # Simplified - just take the first one
-                #     self.edges[u][v] = {"type": "EEL", "lightpath": extendable_lps[0]}
-                #     continue
+                if extendable_lps:
+                    # Simplified - just take the first one
+                    self.edges[u][v] = {"type": "EEL", "lightpath": extendable_lps[0]}
+                    continue
 
                 # Check if we can create a new lightpath
                 can_create, mode, path_G0, fs_block = self.network.can_create_lightpath(u, v, self.demand)
@@ -73,7 +73,10 @@ class CAG:
 
         if edge_info["type"] == "EL" or edge_info["type"] == "EEL":
             lightpath = edge_info["lightpath"]
-            h = len(lightpath.path_in_G0) - 1  # Number of hops
+            if edge_info["type"] == "EL":
+                h = len(lightpath.path_in_G0) - 1  # Number of hops
+            else:
+                h = len(lightpath["extended_lightpath"].path_in_G0) - 1
             return coeffs["c0"] + (1 - 1) * (coeffs["c_old"] * h)
         else:  # PL
             mode = edge_info["transponder_mode"]

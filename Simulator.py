@@ -96,9 +96,21 @@ class Simulator:
                     otn_switching_nodes.add(u)
             elif edge_info["type"] == "EEL":
                 # Extend existing lightpath (simplified - just use it)
-                lightpath = edge_info["lightpath"]
-                lightpath.add_demand(demand)
-                lightpaths_used.append(lightpath)
+                # completed
+                # print("12312132")
+                eel = edge_info["lightpath"]
+                o_lp = eel["original_lightpath"]
+                e_lp = eel["extended_lightpath"]
+                e_lightpath = edge_info["lightpath"]["extended_lightpath"]
+                self.network.remove_lightpath(o_lp)
+                new_lp = self.network.create_lightpath(e_lp.source, e_lp.destination, e_lp.transponder_mode, e_lp.fs_allocated, e_lp.path_in_G0)
+                for d in o_lp.demands:
+                    new_lp.add_demand(d)
+                    index = d.lightpaths_used.index(o_lp)
+                    d.lightpaths_used[index] = new_lp
+
+                new_lp.add_demand(demand)
+                lightpaths_used.append(new_lp)
 
                 if i > 0:
                     otn_switching_nodes.add(u)

@@ -31,7 +31,6 @@ def run_experiments(topology_file, output_dir="results"):
     # Initialize results storage
     results = {policy: {
         "blocking_ratio": [],
-        "spectrum_usage": [],
         "avg_hops": [],
         "avg_otn_switching": [],
         "multi_demand_lightpath_ratio": [],
