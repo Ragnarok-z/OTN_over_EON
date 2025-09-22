@@ -34,7 +34,8 @@ def run_experiments(topology_file, output_dir="results"):
         "avg_hops": [],
         "avg_otn_switching": [],
         "multi_demand_lightpath_ratio": [],
-        "avg_lightpath_usage": []
+        "avg_lightpath_usage": [],
+        "spectrum_usage":[]
     } for policy in policies}
 
     # Run simulations for each traffic intensity and policy

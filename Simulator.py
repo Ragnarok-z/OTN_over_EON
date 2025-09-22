@@ -3,6 +3,8 @@ import random
 from Tool import *
 from CAG import CAG
 from tqdm import tqdm
+from Defragmentation import DefragmentationEngine
+
 
 class Simulator:
     def __init__(self, network, traffic_intensity=10, num_demands=1000):
@@ -74,6 +76,9 @@ class Simulator:
 
         if not path:
             self.blocked_demands.append(demand)
+            defrag_engine = DefragmentationEngine(self.network)
+            # 执行碎片整理
+            defrag_engine.trigger_defragmentation(demand)
             return
 
         # Allocate resources along the path
