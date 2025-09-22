@@ -7,10 +7,12 @@ from Defragmentation import DefragmentationEngine
 
 
 class Simulator:
-    def __init__(self, network, traffic_intensity=10, num_demands=1000):
+    def __init__(self, network, traffic_intensity=10, num_demands=1000, random_seed=423, defrag_params={}):
         self.network = network
         self.traffic_intensity = traffic_intensity
         self.num_demands = num_demands
+        self.random_seed = random_seed
+        self.defrag_params = defrag_params
         self.event_queue = []
         self.current_time = 0
         self.active_demands = {}
@@ -27,6 +29,7 @@ class Simulator:
         self.initialize_events()
 
     def initialize_events(self):
+        random.seed(self.random_seed)
         # Generate arrival events
         lambda_param = self.traffic_intensity  # Arrival rate
         mu_param = 1  # Holding time rate (mean = 1/mu)
@@ -76,9 +79,10 @@ class Simulator:
 
         if not path:
             self.blocked_demands.append(demand)
-            defrag_engine = DefragmentationEngine(self.network)
-            # 执行碎片整理
-            defrag_engine.trigger_defragmentation(demand)
+            if self.defrag_params["en"]:
+                defrag_engine = DefragmentationEngine(self.network)
+                # 执行碎片整理
+                defrag_engine.trigger_defragmentation(demand)
             return
 
         # Allocate resources along the path

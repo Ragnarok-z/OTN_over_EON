@@ -23,10 +23,18 @@ def run_experiments(topology_file, output_dir="results"):
     traffic_intensities = range(300, 510, 40)
 
     # Define number of demand
-    num_demands = 10000
+    num_demands = 50000
+
+    # Defind random seed
+    random_seed = 423
 
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
+
+    # Define defragmentation params
+    defarg_params = {
+        "en":False
+    }
 
     # Initialize results storage
     results = {policy: {
@@ -46,7 +54,7 @@ def run_experiments(topology_file, output_dir="results"):
             print(f"  Testing policy: {policy}")
 
             # Create a new simulator for each run to ensure clean state
-            simulator = Simulator(Network(topology_file), intensity, num_demands)
+            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params)
             simulator.run(policy)
 
             # Store results
