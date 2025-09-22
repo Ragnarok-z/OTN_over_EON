@@ -20,7 +20,7 @@ def run_experiments(topology_file, output_dir="results"):
     network = Network(topology_file)
 
     # Define traffic intensities (Erlang)
-    traffic_intensities = range(300, 510, 40)
+    traffic_intensities = range(300, 510, 50)
 
     # Define number of demand
     num_demands = 50000
@@ -61,11 +61,9 @@ def run_experiments(topology_file, output_dir="results"):
             metrics = simulator.get_metrics()
             for metric in metrics:
                 results[policy][metric].append(metrics[metric])
-
-    # Save results to JSON files
-    for policy in policies:
-        with open(f"{output_dir}/{policy}_results.json", 'w') as f:
-            json.dump(results[policy], f, indent=2)
+            # Save results to JSON files
+            with open(f"{output_dir}/results.json", 'w') as f:
+                json.dump(results[policy], f, indent=2)
 
     # Generate plots similar to those in the paper
 
