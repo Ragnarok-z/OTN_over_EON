@@ -47,11 +47,10 @@ def run_experiments(topology_file, output_dir="results"):
     } for policy in policies}
 
     # Run simulations for each traffic intensity and policy
-    for intensity in traffic_intensities:
-        print(f"Running simulations for traffic intensity: {intensity} Erlang")
-
-        for policy in policies:
-            print(f"  Testing policy: {policy}")
+    for policy in policies:
+        print(f"  Testing policy: {policy}")
+        for intensity in traffic_intensities:
+            print(f"Running simulations for traffic intensity: {intensity} Erlang")
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params)
@@ -63,7 +62,7 @@ def run_experiments(topology_file, output_dir="results"):
                 results[policy][metric].append(metrics[metric])
             # Save results to JSON files
             with open(f"{output_dir}/results.json", 'w') as f:
-                json.dump(results[policy], f, indent=2)
+                json.dump(results, f, indent=2)
 
     # Generate plots similar to those in the paper
 

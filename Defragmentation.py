@@ -119,7 +119,6 @@ class DefragmentationEngine:
 
                     if not moved:
                         print(f"  需求 {demand.id} 无法迁移")
-
             # 检查并移除空光路
             for lp in sorted_lightpaths:
                 if len(lp.demands) == 0 and lp in self.network.lightpaths:
