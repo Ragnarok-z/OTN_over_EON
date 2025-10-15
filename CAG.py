@@ -176,7 +176,10 @@ class CAG:
             h = len(path_G0) - 1
             # delta_f = 0  # Simplified - actual would calculate fragmentation change
             # 计算实际的Δf（碎片化变化）
-            delta_f = self.calculate_delta_f(u, v, mode, path_G0)
+            if coeffs["cf"]:
+                delta_f = self.calculate_delta_f(u, v, mode, path_G0)
+            else:
+                delta_f=0
             u_value = mode["bitrate"]
 
             weight = (coeffs["c0"] + 1 * (

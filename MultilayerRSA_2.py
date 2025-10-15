@@ -33,7 +33,7 @@ def run_experiments(topology_file, output_dir="results"):
 
     # Define defragmentation params
     defarg_params = {
-        "en":True
+        "en":False
     }
 
     # Initialize results storage
