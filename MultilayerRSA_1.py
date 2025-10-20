@@ -23,13 +23,15 @@ def run_experiments(topology_file, output_dir="results"):
     traffic_intensities = range(300, 510, 50)
 
     # Define number of demand
-    num_demands = 50000
+    num_demands = 20000
 
     # Defind random seed
     random_seed = 423
 
     # Define policies to test
-    policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
+    # policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
+    policies = ["MaxMux", "MaxSE", "MinPB"]
+
 
     # Define defragmentation params
     defarg_params = {

@@ -4,6 +4,8 @@ from collections import defaultdict
 from Lightpath import Lightpath
 from params import *
 
+import numpy as np
+from collections import defaultdict
 
 class Network:
     def __init__(self, topology_file):
@@ -24,9 +26,12 @@ class Network:
                 self.nodes.add(t)
                 self.edges[s][t] = d
                 self.edges[t][s] = d  # Assuming undirected edges
-                # Initialize FS usage for each edge
-                self.fs_usage[(s, t)] = [False] * 768  # 768 FSs as per the paper
-                self.fs_usage[(t, s)] = [False] * 768
+                # # Initialize FS usage for each edge
+                # self.fs_usage[(s, t)] = [False] * 768  # 768 FSs as per the paper
+                # self.fs_usage[(t, s)] = [False] * 768
+                # 使用numpy布尔数组，更高效
+                self.fs_usage[(s, t)] = np.zeros(768, dtype=bool)
+                self.fs_usage[(t, s)] = np.zeros(768, dtype=bool)
 
     def initialize_network(self):
         # Initialize OTN switching capacity (24,000 Gb/s as per the paper)
