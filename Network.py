@@ -138,39 +138,68 @@ class Network:
             length += self.edges[path[i]][path[i + 1]]
         return length
 
-    def find_available_fs_block(self, path, required_fs):
-        # Find contiguous FS block along the entire path
-        # Returns (start_fs, end_fs) or None if not available
+    # def find_available_fs_block(self, path, required_fs):
+    #     # Find contiguous FS block along the entire path
+    #     # Returns (start_fs, end_fs) or None if not available
+    #
+    #     # Get all edges in the path
+    #     edges_in_path = []
+    #     for i in range(len(path) - 1):
+    #         u = path[i]
+    #         v = path[i + 1]
+    #         edges_in_path.append((u, v))
+    #
+    #     # Check each possible FS block
+    #     # optimization
+    #     start_fs, end_fs = 0, -1
+    #     while True:
+    #         # print(start_fs,end_fs)
+    #         ex_fs = end_fs+1
+    #         if ex_fs >= 768:
+    #             break
+    #         available = True
+    #         for edge in edges_in_path:
+    #             if self.fs_usage[edge][ex_fs]:
+    #                 available = False
+    #                 break
+    #         if available:
+    #             end_fs = ex_fs
+    #             if end_fs - start_fs + 1 == required_fs:
+    #                 return (start_fs, end_fs)
+    #         if not available:
+    #             start_fs = ex_fs + 1
+    #             end_fs = start_fs - 1
+    #             if start_fs + required_fs - 1 >= 768:
+    #                 break
+    #     return None
 
-        # Get all edges in the path
+    def find_available_fs_block(self, path, required_fs):
+        """使用numpy优化查找连续可用频隙块"""
         edges_in_path = []
         for i in range(len(path) - 1):
-            u = path[i]
-            v = path[i + 1]
+            u, v = path[i], path[i + 1]
             edges_in_path.append((u, v))
 
-        # Check each possible FS block
-        # optimization
-        start_fs, end_fs = 0, -1
-        while True:
-            # print(start_fs,end_fs)
-            ex_fs = end_fs+1
-            if ex_fs >= 768:
-                break
-            available = True
-            for edge in edges_in_path:
-                if self.fs_usage[edge][ex_fs]:
-                    available = False
-                    break
-            if available:
-                end_fs = ex_fs
-                if end_fs - start_fs + 1 == required_fs:
-                    return (start_fs, end_fs)
-            if not available:
-                start_fs = ex_fs + 1
-                end_fs = start_fs - 1
-                if start_fs + required_fs - 1 >= 768:
-                    break
+        # 使用numpy的位运算来快速查找
+        # 计算所有链路的共同可用频隙
+        common_available = np.ones(768, dtype=bool)
+
+        for edge in edges_in_path:
+            common_available &= ~self.fs_usage[edge]  # 取反表示可用
+
+        # 查找连续可用的频隙块
+        if not np.any(common_available):
+            return None
+
+        # 使用numpy的运算查找连续块
+        diff = np.diff(np.concatenate(([False], common_available, [False])).astype(int))
+        starts = np.where(diff == 1)[0]
+        ends = np.where(diff == -1)[0]
+
+        for start, end in zip(starts, ends):
+            if end - start >= required_fs:
+                return (start, start + required_fs - 1)
+
         return None
 
 

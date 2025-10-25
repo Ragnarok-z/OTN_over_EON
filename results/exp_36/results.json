@@ -1,0 +1,38 @@
+{
+  "MaxMux": {
+    "blocking_ratio": [
+      0.0143
+    ],
+    "avg_hops": [
+      1.6322410469716953
+    ],
+    "avg_otn_switching": [
+      0.08980016094800862
+    ],
+    "multi_demand_lightpath_ratio": [
+      0.6451245371428589
+    ],
+    "avg_lightpath_usage": [
+      0.6982324854447481
+    ],
+    "spectrum_usage": [
+      0.36501576283026715
+    ]
+  },
+  "MaxSE": {
+    "blocking_ratio": [],
+    "avg_hops": [],
+    "avg_otn_switching": [],
+    "multi_demand_lightpath_ratio": [],
+    "avg_lightpath_usage": [],
+    "spectrum_usage": []
+  },
+  "MinPB": {
+    "blocking_ratio": [],
+    "avg_hops": [],
+    "avg_otn_switching": [],
+    "multi_demand_lightpath_ratio": [],
+    "avg_lightpath_usage": [],
+    "spectrum_usage": []
+  }
+}

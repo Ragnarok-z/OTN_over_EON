@@ -50,6 +50,7 @@ class Simulator:
             inter_arrival = random.expovariate(lambda_param)
             time += inter_arrival
             arrival_times.append(time)
+        # print(arrival_times[:5])
 
         # Create demands
         nodes = list(self.network.nodes)
@@ -60,7 +61,10 @@ class Simulator:
 
             # Generate holding time
             holding_time = random.expovariate(mu_param)
+
             demand.set_departure_time(holding_time)
+            # if i<5:
+            #     print(i,demand.arrival_time,demand.departure_time)
 
             # Add arrival and departure events
             self.event_queue.append(Event(EventType.ARRIVAL, arrival_time, demand))
@@ -68,6 +72,8 @@ class Simulator:
 
         # Sort events by time
         self.event_queue.sort()
+        # print([(x.event_type,x.time,x.demand) for x in  self.event_queue[0:5]])
+
 
     def run(self, policy="MinPB", K=3, max_hops=5):
         # 记录初始状态
@@ -75,6 +81,7 @@ class Simulator:
 
         for event in tqdm(self.event_queue):
             self.current_time = event.time
+            # print(self.current_time)
 
             if event.event_type == EventType.ARRIVAL:
                 self.process_arrival(event.demand, policy, K, max_hops)
@@ -210,6 +217,7 @@ class Simulator:
                 defrag_engine = DefragmentationEngine(self.network)
                 # 执行碎片整理
                 defrag_engine.trigger_defragmentation(demand)
+            print(demand.id, "is blocked")
             return
 
         # Allocate resources along the path
