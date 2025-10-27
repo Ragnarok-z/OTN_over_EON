@@ -55,7 +55,7 @@ def run_experiments(topology_file, output_dir="results"):
             print(f"Running simulations for traffic intensity: {intensity} Erlang")
 
             # Create a new simulator for each run to ensure clean state
-            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params)
+            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
             simulator.run(policy)
 
             # Store results

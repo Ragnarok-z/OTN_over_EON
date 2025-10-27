@@ -208,7 +208,9 @@ class CAG:
         labels[source].append(initial_label)
 
         priority_queue = []
-        heapq.heappush(priority_queue, (initial_label["cost"], id(initial_label), initial_label))
+        label_id = 0
+        heapq.heappush(priority_queue, (initial_label["cost"], label_id, initial_label))
+        label_id = 1
 
         while priority_queue:
             current_cost, _, current_label = heapq.heappop(priority_queue)
@@ -256,6 +258,7 @@ class CAG:
                 if not dominated:
                     # Add to labels and queue
                     labels[neighbor].append(new_label)
-                    heapq.heappush(priority_queue, (new_label["cost"], id(new_label), new_label))
+                    heapq.heappush(priority_queue, (new_label["cost"], label_id, new_label))
+                    label_id += 1
 
         return None  # No path found

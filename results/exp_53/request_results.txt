@@ -1,0 +1,141 @@
+Demand 0 is served, traffic_class: TrafficClass.GE10,G1_path: [3, 13]
+  lp_sd: (3, 13) 
+    path_in_G0: [3, 6, 14, 13] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 1 is served, traffic_class: TrafficClass.GE400,G1_path: [14, 2]
+  lp_sd: (14, 2) 
+    path_in_G0: [14, 13, 11, 4, 2] 
+    fs_allocated: (np.int64(8), np.int64(26))
+Demand 2 is served, traffic_class: TrafficClass.GE400,G1_path: [2, 1]
+  lp_sd: (2, 1) 
+    path_in_G0: [2, 1] 
+    fs_allocated: (np.int64(0), np.int64(18))
+Demand 3 is served, traffic_class: TrafficClass.GE100,G1_path: [14, 1]
+  lp_sd: (14, 1) 
+    path_in_G0: [14, 13, 9, 8, 1] 
+    fs_allocated: (np.int64(27), np.int64(34))
+Demand 4 is served, traffic_class: TrafficClass.GE400,G1_path: [7, 3]
+  lp_sd: (7, 3) 
+    path_in_G0: [7, 5, 4, 2, 3] 
+    fs_allocated: (np.int64(27), np.int64(45))
+Demand 5 is served, traffic_class: TrafficClass.GE400,G1_path: [8, 11]
+  lp_sd: (8, 11) 
+    path_in_G0: [8, 9, 12, 11] 
+    fs_allocated: (np.int64(0), np.int64(18))
+Demand 6 is served, traffic_class: TrafficClass.GE400,G1_path: [6, 11]
+  lp_sd: (6, 11) 
+    path_in_G0: [6, 14, 13, 11] 
+    fs_allocated: (np.int64(35), np.int64(53))
+Demand 7 is served, traffic_class: TrafficClass.GE100,G1_path: [7, 12]
+  lp_sd: (7, 12) 
+    path_in_G0: [7, 8, 9, 12] 
+    fs_allocated: (np.int64(19), np.int64(26))
+Demand 8 is served, traffic_class: TrafficClass.GE100,G1_path: [1, 12]
+  lp_sd: (1, 12) 
+    path_in_G0: [1, 8, 9, 12] 
+    fs_allocated: (np.int64(35), np.int64(42))
+Demand 9 is served, traffic_class: TrafficClass.GE100,G1_path: [13, 5]
+  lp_sd: (13, 5) 
+    path_in_G0: [13, 9, 8, 7, 5] 
+    fs_allocated: (np.int64(46), np.int64(53))
+Demand 10 is served, traffic_class: TrafficClass.GE400,G1_path: [3, 14]
+  lp_sd: (3, 14) 
+    path_in_G0: [3, 6, 14] 
+    fs_allocated: (np.int64(8), np.int64(26))
+Demand 11 is served, traffic_class: TrafficClass.GE100,G1_path: [4, 3]
+  lp_sd: (4, 3) 
+    path_in_G0: [4, 2, 3] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 12 is served, traffic_class: TrafficClass.GE400,G1_path: [3, 4]
+  lp_sd: (3, 4) 
+    path_in_G0: [3, 2, 4] 
+    fs_allocated: (np.int64(46), np.int64(64))
+Demand 13 is served, traffic_class: TrafficClass.GE10,G1_path: [5, 7]
+  lp_sd: (5, 7) 
+    path_in_G0: [5, 7] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 14 is served, traffic_class: TrafficClass.GE400,G1_path: [5, 7, 8]
+  lp_sd: (5, 7) 
+    path_in_G0: [5, 7] 
+    fs_allocated: (np.int64(0), np.int64(18))
+  lp_sd: (7, 8) 
+    path_in_G0: [7, 8] 
+    fs_allocated: (np.int64(0), np.int64(11))
+Demand 15 is served, traffic_class: TrafficClass.GE100,G1_path: [4, 7]
+  lp_sd: (4, 7) 
+    path_in_G0: [4, 5, 7] 
+    fs_allocated: (np.int64(19), np.int64(26))
+Demand 16 is served, traffic_class: TrafficClass.GE10,G1_path: [5, 7, 10]
+  lp_sd: (5, 7) 
+    path_in_G0: [5, 7] 
+    fs_allocated: (np.int64(0), np.int64(18))
+  lp_sd: (7, 10) 
+    path_in_G0: [7, 10] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 17 is served, traffic_class: TrafficClass.GE400,G1_path: [11, 10]
+  lp_sd: (11, 10) 
+    path_in_G0: [11, 12, 9, 10] 
+    fs_allocated: (np.int64(43), np.int64(61))
+Demand 18 is served, traffic_class: TrafficClass.GE400,G1_path: [2, 8]
+  lp_sd: (2, 8) 
+    path_in_G0: [2, 4, 5, 7, 8] 
+    fs_allocated: (np.int64(65), np.int64(83))
+Demand 19 is served, traffic_class: TrafficClass.GE400,G1_path: [13, 11]
+  lp_sd: (13, 11) 
+    path_in_G0: [13, 11] 
+    fs_allocated: (np.int64(54), np.int64(65))
+Demand 20 is served, traffic_class: TrafficClass.GE100,G1_path: [11, 13]
+  lp_sd: (11, 13) 
+    path_in_G0: [11, 13] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 21 is served, traffic_class: TrafficClass.GE10,G1_path: [13, 7]
+  lp_sd: (13, 7) 
+    path_in_G0: [13, 9, 8, 7] 
+    fs_allocated: (np.int64(54), np.int64(61))
+Demand 22 is served, traffic_class: TrafficClass.GE400,G1_path: [13, 5]
+  lp_sd: (13, 5) 
+    path_in_G0: [13, 9, 8, 7, 5] 
+    fs_allocated: (np.int64(84), np.int64(102))
+Demand 23 is served, traffic_class: TrafficClass.GE10,G1_path: [10, 2]
+  lp_sd: (10, 2) 
+    path_in_G0: [10, 7, 5, 4, 2] 
+    fs_allocated: (np.int64(103), np.int64(110))
+Demand 24 is served, traffic_class: TrafficClass.GE400,G1_path: [2, 9]
+  lp_sd: (2, 9) 
+    path_in_G0: [2, 4, 5, 7, 8, 9] 
+    fs_allocated: (np.int64(111), np.int64(129))
+Demand 25 is served, traffic_class: TrafficClass.GE400,G1_path: [10, 12]
+  lp_sd: (10, 12) 
+    path_in_G0: [10, 9, 12] 
+    fs_allocated: (np.int64(62), np.int64(80))
+Demand 26 is served, traffic_class: TrafficClass.GE100,G1_path: [7, 10, 6]
+  lp_sd: (7, 10) 
+    path_in_G0: [7, 10] 
+    fs_allocated: (np.int64(0), np.int64(11))
+  lp_sd: (10, 6) 
+    path_in_G0: [10, 6] 
+    fs_allocated: (np.int64(0), np.int64(7))
+Demand 27 is served, traffic_class: TrafficClass.GE100,G1_path: [13, 14]
+  lp_sd: (13, 14) 
+    path_in_G0: [13, 14] 
+    fs_allocated: (np.int64(54), np.int64(61))
+Demand 28 is served, traffic_class: TrafficClass.GE100,G1_path: [6, 12]
+  lp_sd: (6, 12) 
+    path_in_G0: [6, 10, 9, 12] 
+    fs_allocated: (np.int64(27), np.int64(34))
+Demand 29 is served, traffic_class: TrafficClass.GE400,G1_path: [11, 3]
+  lp_sd: (11, 3) 
+    path_in_G0: [11, 4, 2, 3] 
+    fs_allocated: (np.int64(84), np.int64(102))
+Demand 30 is served, traffic_class: TrafficClass.GE400,G1_path: [13, 8]
+  lp_sd: (13, 8) 
+    path_in_G0: [13, 9, 8] 
+    fs_allocated: (np.int64(62), np.int64(80))
+Demand 31 is served, traffic_class: TrafficClass.GE10,G1_path: [6, 1]
+  lp_sd: (6, 1) 
+    path_in_G0: [6, 3, 1] 
+    fs_allocated: (np.int64(27), np.int64(34))
+Demand 32 is served, traffic_class: TrafficClass.GE10,G1_path: [7, 8]
+  lp_sd: (7, 8) 
+    path_in_G0: [7, 8] 
+    fs_allocated: (np.int64(0), np.int64(18))

@@ -4,10 +4,11 @@ from Tool import *
 from CAG import CAG
 from tqdm import tqdm
 from Defragmentation import DefragmentationEngine
+import pickle
 
 
 class Simulator:
-    def __init__(self, network, traffic_intensity=10, num_demands=1000, random_seed=423, defrag_params={}):
+    def __init__(self, network, traffic_intensity=10, num_demands=1000, random_seed=423, defrag_params={}, output_dir=None):
         self.network = network
         self.traffic_intensity = traffic_intensity
         self.num_demands = num_demands
@@ -18,6 +19,7 @@ class Simulator:
         self.active_demands = {}
         self.blocked_demands = []
         self.completed_demands = []
+        self.output_dir = output_dir
 
         # 用于持续收集指标的数据结构
         self.metrics_history = {
@@ -208,8 +210,16 @@ class Simulator:
         # Build CAG for this demand
         cag = CAG(self.network, demand, K)
 
+        # with open(f'{self.output_dir}/damand{demand.id}_CAG.pkl', 'wb') as f:
+        #     pickle.dump(cag, f)
+
         # Find shortest path using label-setting algorithm
+
         path = cag.find_shortest_path(policy, max_hops)
+
+        # for i in range(10):
+        #     path_ = cag.find_shortest_path(policy, max_hops)
+        #     assert path == path_, f'shortest path failed: {i,demand.id,path,path_}'
 
         if not path:
             self.blocked_demands.append(demand)
@@ -217,7 +227,7 @@ class Simulator:
                 defrag_engine = DefragmentationEngine(self.network)
                 # 执行碎片整理
                 defrag_engine.trigger_defragmentation(demand)
-            print(demand.id, "is blocked")
+            # print(demand.id, "is blocked")
             return
 
         # Allocate resources along the path
@@ -279,6 +289,10 @@ class Simulator:
         demand.path = path
         demand.lightpaths_used = lightpaths_used
         self.active_demands[demand.id] = demand
+        # with open(f"{self.output_dir}/request_results.txt", 'a', encoding='utf-8') as f:
+        #     f.write(f"Demand {demand.id} is served, traffic_class: {demand.traffic_class},G1_path: {demand.path}\n")
+        #     for lp in lightpaths_used:
+        #         f.write(f"  lp_sd: {(lp.source, lp.destination)} \n    path_in_G0: {lp.path_in_G0} \n    fs_allocated: {lp.fs_allocated}\n")
 
     def process_departure(self, demand):
         if demand.id not in self.active_demands:
