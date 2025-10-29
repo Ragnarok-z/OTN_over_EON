@@ -126,9 +126,13 @@ class Simulator:
         multi_demand_lps = sum(1 for lp in self.network.lightpaths if len(lp.demands) > 1)
         multi_demand_lightpath_ratio = multi_demand_lps / len(self.network.lightpaths) if self.network.lightpaths else 0
 
+
+        # total_usage = sum(lp.used_capacity / lp.capacity for lp in self.network.lightpaths)
+        # avg_lightpath_usage = total_usage / len(self.network.lightpaths) if self.network.lightpaths else 0
         # 平均光路容量使用率
-        total_usage = sum(lp.used_capacity / lp.capacity for lp in self.network.lightpaths)
-        avg_lightpath_usage = total_usage / len(self.network.lightpaths) if self.network.lightpaths else 0
+        total_lp_used = sum(lp.used_capacity for lp in self.network.lightpaths)
+        total_lp_cap = sum(lp.capacity for lp in self.network.lightpaths)
+        avg_lightpath_usage = total_lp_used / total_lp_cap if total_lp_cap else 0
 
         # 记录到历史数据
         self.metrics_history["spectrum_usage"].append(spectrum_usage)

@@ -7,6 +7,10 @@ from params import *
 import numpy as np
 from collections import defaultdict
 
+import numba as nb
+
+import numba_func
+
 class Network:
     def __init__(self, topology_file):
         self.nodes = set()
@@ -173,6 +177,7 @@ class Network:
     #                 break
     #     return None
 
+    # @nb.njit(cache=True)
     def find_available_fs_block(self, path, required_fs):
         """使用numpy优化查找连续可用频隙块"""
         edges_in_path = []
@@ -208,15 +213,20 @@ class Network:
         for i in range(len(path) - 1):
             u = path[i]
             v = path[i + 1]
+            # numba_func.allocate_fs_block(self.fs_usage[u, v], start_fs, end_fs, True)
+            # numba_func.allocate_fs_block(self.fs_usage[v, u], start_fs, end_fs, True)
             for fs in range(start_fs, end_fs + 1):
                 self.fs_usage[(u, v)][fs] = True
                 self.fs_usage[(v, u)][fs] = True
 
+    # @nb.njit(cache=True)
     def release_fs_block(self, path, fs_block):
         start_fs, end_fs = fs_block
         for i in range(len(path) - 1):
             u = path[i]
             v = path[i + 1]
+            # numba_func.allocate_fs_block(self.fs_usage[u, v], start_fs, end_fs, False)
+            # numba_func.allocate_fs_block(self.fs_usage[v, u], start_fs, end_fs, False)
             for fs in range(start_fs, end_fs + 1):
                 self.fs_usage[(u, v)][fs] = False
                 self.fs_usage[(v, u)][fs] = False
