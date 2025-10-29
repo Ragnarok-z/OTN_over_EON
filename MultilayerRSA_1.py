@@ -29,8 +29,8 @@ def run_experiments(topology_file, output_dir="results"):
     random_seed = 423
 
     # Define policies to test
-    # policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
-    policies = ["MaxMux", "MaxSE", "MinPB"]
+    policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
+    # policies = ["MaxMux", "MaxSE", "MinPB"]
 
 
     # Define defragmentation params

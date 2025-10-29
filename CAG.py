@@ -68,7 +68,7 @@ class CAG:
                     }
 
     # 在CAG.py中添加以下方法
-    def calculate_abp_fragmentation(self, new_lightpath_info=None):
+    def calculate_abp_fragmentation(self, path_G0):
         """
         计算ABP (Access Blocking Probability) 碎片化指标
         基于论文中的公式：ABP = 1 - (实际容量 / 理想容量)
@@ -77,32 +77,38 @@ class CAG:
         granularities = [8, 12, 19]  # 对应不同的FS需求
 
         # 计算实际容量（考虑碎片化）
+
+
         actual_capacity = 0
-        for u in self.network.edges:
-            for v in self.network.edges[u]:
-                if u<v:
-                    edge = (u,v)
-                else:
-                    continue
-                fs_usage = self.network.fs_usage[edge]
+        # for u in self.network.edges:
+        #     for v in self.network.edges[u]:
+        #         if u<v:
+        #             edge = (u,v)
+        #         else:
+        #             continue
+        for i in range(len(path_G0) - 1):
+            edge = (path_G0[i],path_G0[i+1])
+            fs_usage = self.network.fs_usage[edge]
 
-                # 找出所有空闲的连续块
-                free_blocks = self._find_free_blocks(fs_usage)
+            # 找出所有空闲的连续块
+            free_blocks = self._find_free_blocks(fs_usage)
 
-                for block_size in free_blocks:
-                    for g in granularities:
-                        if block_size >= g:
-                            actual_capacity += block_size // g
+            for block_size in free_blocks:
+                for g in granularities:
+                    if block_size >= g:
+                        actual_capacity += block_size // g
 
         # 计算理想容量（所有空闲频谱连续）
         total_free_slots = 0
-        for u in self.network.edges:
-            for v in self.network.edges[u]:
-                if u<v:
-                    edge = (u,v)
-                else:
-                    continue
-                total_free_slots += sum(1 for fs in self.network.fs_usage[edge] if not fs)
+        # for u in self.network.edges:
+        #     for v in self.network.edges[u]:
+        #         if u<v:
+        #             edge = (u,v)
+        #         else:
+        #             continue
+        for i in range(len(path_G0) - 1):
+            edge = (path_G0[i],path_G0[i+1])
+            total_free_slots += sum(1 for fs in self.network.fs_usage[edge] if not fs)
 
         ideal_capacity = 0
         for g in granularities:
@@ -134,30 +140,30 @@ class CAG:
 
         return free_blocks
 
-    def calculate_delta_f(self, u, v, transponder_mode, path_G0):
+    def calculate_delta_f(self,path_G0, fs_block):
         """
         计算建立新光路后的碎片化变化量 Δf
         """
         # 计算建立前的ABP
-        abp_before = self.calculate_abp_fragmentation()
+        abp_before = self.calculate_abp_fragmentation(path_G0)
 
         # 模拟建立光路（临时占用频谱）
-        required_fs = transponder_mode["fs_required"]
-        fs_block = self.network.find_available_fs_block(path_G0, required_fs)
+        # required_fs = transponder_mode["fs_required"]
+        # fs_block = self.network.find_available_fs_block(path_G0, required_fs)
 
-        if fs_block:
+        # if fs_block:
             # 临时分配频谱
-            self.network.allocate_fs_block(path_G0, fs_block)
+        self.network.allocate_fs_block(path_G0, fs_block)
 
-            # 计算建立后的ABP
-            abp_after = self.calculate_abp_fragmentation()
+        # 计算建立后的ABP
+        abp_after = self.calculate_abp_fragmentation(path_G0)
 
-            # 恢复频谱状态
-            self.network.release_fs_block(path_G0, fs_block)
+        # 恢复频谱状态
+        self.network.release_fs_block(path_G0, fs_block)
 
-            return abp_after - abp_before
+        return abp_after - abp_before
 
-        return 0
+        # return 0
 
     def calculate_edge_weight(self, u, v, policy):
         edge_info = self.edges[u][v]
@@ -173,11 +179,12 @@ class CAG:
         else:  # PL
             mode = edge_info["transponder_mode"]
             path_G0 = edge_info["path_G0"]
+            fs_block = edge_info["fs_block"]
             h = len(path_G0) - 1
             # delta_f = 0  # Simplified - actual would calculate fragmentation change
             # 计算实际的Δf（碎片化变化）
             if coeffs["cf"]:
-                delta_f = self.calculate_delta_f(u, v, mode, path_G0)
+                delta_f = self.calculate_delta_f(path_G0, fs_block)
             else:
                 delta_f=0
             u_value = mode["bitrate"]
