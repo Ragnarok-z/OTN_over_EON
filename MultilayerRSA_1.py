@@ -31,7 +31,10 @@ def run_experiments(topology_file, output_dir="results"):
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
+    policies = ["MinEn", "MinPB"]
 
+    # 选择在G0层面的K最短路内进行路由
+    K = 1
 
     # Define defragmentation params
     defarg_params = {
@@ -56,7 +59,7 @@ def run_experiments(topology_file, output_dir="results"):
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
-            simulator.run(policy)
+            simulator.run(policy=policy,K=K)
 
             # Store results
             metrics = simulator.get_metrics()
