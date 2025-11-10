@@ -249,9 +249,13 @@ class Simulator:
                 lightpath.add_demand(demand)
                 lightpaths_used.append(lightpath)
 
-                # Update OTN switching if this is an intermediate node
-                if i > 0:
+                # # Update OTN switching if this is an intermediate node
+                # if i > 0:
+                #     otn_switching_nodes.add(u)
+                # 将所有节点都加入OTN switching节点使用集合
+                if i==0:
                     otn_switching_nodes.add(u)
+                otn_switching_nodes.add(v)
             elif edge_info["type"] == "EEL":
                 # Extend existing lightpath (simplified - just use it)
                 # completed
@@ -270,8 +274,13 @@ class Simulator:
                 new_lp.add_demand(demand)
                 lightpaths_used.append(new_lp)
 
-                if i > 0:
+                # # Update OTN switching if this is an intermediate node
+                # if i > 0:
+                #     otn_switching_nodes.add(u)
+                # 将所有节点都加入OTN switching节点使用集合
+                if i==0:
                     otn_switching_nodes.add(u)
+                otn_switching_nodes.add(v)
             elif edge_info["type"] == "PL":
                 # Create new lightpath
                 transponder_mode = edge_info["transponder_mode"]
@@ -282,8 +291,13 @@ class Simulator:
                 lightpath.add_demand(demand)
                 lightpaths_used.append(lightpath)
 
-                if i > 0:
+                # # Update OTN switching if this is an intermediate node
+                # if i > 0:
+                #     otn_switching_nodes.add(u)
+                # 将所有节点都加入OTN switching节点使用集合
+                if i==0:
                     otn_switching_nodes.add(u)
+                otn_switching_nodes.add(v)
 
         # Update OTN switching capacity
         for node in otn_switching_nodes:
