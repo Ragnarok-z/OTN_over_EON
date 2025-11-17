@@ -325,9 +325,10 @@ class Simulator:
                 self.network.remove_lightpath(lightpath)
 
         # Update OTN switching capacity for intermediate nodes
+        # 将起终点也加入释放的列表中
         if demand.path:
             otn_switching_nodes = set()
-            for i in range(1, len(demand.path) - 1):
+            for i in range(0, len(demand.path)):
                 otn_switching_nodes.add(demand.path[i])
 
             for node in otn_switching_nodes:

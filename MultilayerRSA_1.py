@@ -34,7 +34,7 @@ def run_experiments(topology_file, output_dir="results"):
     policies = ["MinEn", "MinPB"]
 
     # 选择在G0层面的K最短路内进行路由
-    K = 1
+    K = 3
 
     # Define defragmentation params
     defarg_params = {
