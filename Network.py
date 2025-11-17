@@ -424,10 +424,11 @@ class Network:
 
     def update_otn_switching(self, node, capacity_change):
         # Update OTN switching capacity usage at a node
-        if node in self.otn_switches:
-            self.otn_switches[node]["used_capacity"] += capacity_change
-            if self.otn_switches[node]["used_capacity"] < 0:
-                self.otn_switches[node]["used_capacity"] = 0
+
+        self.otn_switches[node]["used_capacity"] += capacity_change
+        assert self.otn_switches[node]["used_capacity"] >= 0 \
+               and self.otn_switches[node]["used_capacity"] <= 24000, \
+            (node, self.otn_switches[node]["used_capacity"])
 
     def get_otn_switching_usage(self, node):
         if node in self.otn_switches:
