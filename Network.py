@@ -434,3 +434,25 @@ class Network:
         if node in self.otn_switches:
             return self.otn_switches[node]["used_capacity"]
         return 0
+
+    # 在Network类中添加以下方法
+    def can_create_lightpath_for_path(self, path_G0, demand):
+        """检查在给定路径上是否可以创建光路"""
+        if not path_G0:
+            return False, None, None, None
+
+        required_capacity = demand.traffic_class.value
+        path_length = self.path_length(path_G0)
+
+        for mode in TRANSPONDER_MODES:
+            if mode["capacity"] >= required_capacity and path_length <= mode["max_spans"] * length_of_span:
+                fs_block = self.find_available_fs_block(path_G0, mode["fs_required"])
+                if fs_block:
+                    return True, mode, path_G0, fs_block
+
+        return False, None, None, None
+
+    def find_existing_lightpaths_all(self, source, destination):
+        """找到源和目的地之间的所有现有光路"""
+        return [lp for lp in self.lightpaths
+                if lp.source == source and lp.destination == destination]
