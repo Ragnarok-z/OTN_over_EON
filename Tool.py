@@ -50,72 +50,95 @@ def get_next_exp_number(output_path):
 
 import collections
 
-def optimized_spfa(graph, start, end):
+
+def optimized_spfa_with_g0_constraint(cag, start, end):
     """
-    优化的SPFA算法，用于在扩展CAG上寻找最短路径
+    带G0层链路限制的优化SPFA算法
 
     Args:
-        graph: 邻接表 {u: {v: weight}}
+        cag: ExtendedCAG实例
         start: 起点
         end: 终点
 
     Returns:
-        tuple: (最短距离, 路径, 是否找到路径)
+        tuple: (最短距离, 路径, 使用的边列表, 是否找到路径)
     """
-    if start not in graph or end not in graph:
-        return float('inf'), [], False
+    if start not in cag.nodes or end not in cag.nodes:
+        return float('inf'), [], [], False
 
-    n = max(graph.keys()) + 1 if graph else 0
-    dist = {node: float('inf') for node in graph}
-    prev = {node: None for node in graph}
-    in_queue = {node: False for node in graph}
-    count = {node: 0 for node in graph}
+    # 初始化数据结构
+    dist = {node: float('inf') for node in cag.nodes}
+    prev = {node: None for node in cag.nodes}  # 记录前驱节点
+    prev_edge = {node: None for node in cag.nodes}  # 记录前驱边
+    used_g0_links = {node: set() for node in cag.nodes}  # 记录到每个节点已使用的G0链路
+    in_queue = {node: False for node in cag.nodes}
+    count = {node: 0 for node in cag.nodes}
 
     dist[start] = 0
+    used_g0_links[start] = set()
     queue = collections.deque()
     queue.append(start)
     in_queue[start] = True
     count[start] += 1
 
-    # SLF优化参数
     while queue:
         u = queue.popleft()
         in_queue[u] = False
 
-        if u not in graph:
-            continue
+        # 遍历所有相邻节点
+        for v in cag.edges[u]:
+            # 遍历u到v的所有边
+            for edge_info in cag.edges[u][v]:
+                weight = edge_info["weight"]
+                new_dist = dist[u] + weight
 
-        for v, weight in graph[u].items():
-            if v not in dist:
-                continue
+                # 检查G0链路限制
+                if edge_info["type"] in ["EEL", "PL"]:
+                    edge_g0_links = edge_info["g0_links"]
+                    # 检查是否有G0链路冲突
+                    if used_g0_links[u] & edge_g0_links:
+                        continue  # 有冲突，跳过这条边
 
-            new_dist = dist[u] + weight
-            if new_dist < dist[v]:
-                dist[v] = new_dist
-                prev[v] = u
+                # 如果距离更短，更新
+                if new_dist < dist[v]:
+                    dist[v] = new_dist
+                    prev[v] = u
+                    prev_edge[v] = edge_info
 
-                if not in_queue[v]:
-                    count[v] += 1
-                    # 检测负环
-                    if count[v] >= len(graph):
-                        return float('inf'), [], False
-
-                    # SLF优化：如果当前距离小于队首，插入队首
-                    if queue and dist[v] < dist[queue[0]]:
-                        queue.appendleft(v)
+                    # 更新已使用的G0链路
+                    if edge_info["type"] in ["EEL", "PL"]:
+                        used_g0_links[v] = used_g0_links[u] | edge_info["g0_links"]
                     else:
-                        queue.append(v)
-                    in_queue[v] = True
+                        used_g0_links[v] = used_g0_links[u].copy()
 
-    # 重构路径
+                    if not in_queue[v]:
+                        count[v] += 1
+                        # 检测负环
+                        if count[v] >= len(cag.nodes):
+                            return float('inf'), [], [], False
+
+                        # SLF优化
+                        if queue and dist[v] < dist[queue[0]]:
+                            queue.appendleft(v)
+                        else:
+                            queue.append(v)
+                        in_queue[v] = True
+
+    # 重构路径和边序列
     if dist[end] == float('inf'):
-        return dist[end], [], False
+        return dist[end], [], [], False
 
     path = []
+    edge_sequence = []
     current = end
+
     while current is not None:
         path.append(current)
+        if prev_edge[current] is not None:
+            edge_sequence.append(prev_edge[current])
         current = prev[current]
-    path.reverse()
 
-    return dist[end], path, True
+    path.reverse()
+    edge_sequence.reverse()
+
+    return dist[end], path, edge_sequence, True
