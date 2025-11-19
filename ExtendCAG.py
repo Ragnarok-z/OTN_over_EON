@@ -20,16 +20,15 @@ class ExtendedCAG:
         k_shortest_paths = self.network.find_k_shortest_paths(
             self.demand.source, self.demand.destination, self.K)
 
-        # 收集所有节点
-        self.nodes.add(self.demand.source)
-        self.nodes.add(self.demand.destination)
+        # Collect all nodes from these paths that have OTN switching capability
+        # self.nodes.add(self.demand.source)
+        # self.nodes.add(self.demand.destination)
 
         for path in k_shortest_paths:
             for node in path:
-                if node != self.demand.source and node != self.demand.destination:
-                    if self.network.otn_switches[node]["used_capacity"] < self.network.otn_switches[node][
-                        "total_capacity"]:
-                        self.nodes.add(node)
+                if (self.network.otn_switches[node]["used_capacity"] + self.demand.traffic_class.value
+                        <= self.network.otn_switches[node]["total_capacity"]):
+                    self.nodes.add(node)
 
         # 为每对节点添加所有可能的边
         for u in self.nodes:
