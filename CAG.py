@@ -202,6 +202,8 @@ class CAG:
         # Implement label-setting algorithm for constrained shortest path
         source = self.demand.source
         destination = self.demand.destination
+        if source not in self.nodes or destination not in self.nodes:
+            return None
 
         # Initialize labels
         labels = {node: [] for node in self.nodes}
