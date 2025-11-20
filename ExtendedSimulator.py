@@ -15,6 +15,9 @@ class ExtendedSimulator(Simulator):
         """处理需求到达事件（使用新的资源分配方案）"""
         success, message = self.allocator.allocate_demand(demand)
 
+        # if demand.id == 100:
+        #     print("100", demand.path)
+
         if not success:
             self.blocked_demands.append(demand)
             if self.defrag_params["en"]:
@@ -42,6 +45,7 @@ class ExtendedSimulator(Simulator):
         if demand.path:
             otn_switching_nodes = set(demand.path)  # 包含所有节点
             for node in otn_switching_nodes:
+                assert node is not None, (demand.path, demand.id)
                 self.network.update_otn_switching(node, -demand.traffic_class.value)
 
         self.completed_demands.append(demand)

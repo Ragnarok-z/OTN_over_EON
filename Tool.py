@@ -141,4 +141,7 @@ def optimized_spfa_with_g0_constraint(cag, start, end):
     path.reverse()
     edge_sequence.reverse()
 
+    assert None not in path, f"path={path}"
+    assert None not in edge_sequence, f"path={edge_sequence}"
+
     return dist[end], path, edge_sequence, True

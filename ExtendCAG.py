@@ -3,6 +3,8 @@ import math
 import heapq
 from typing import List, Dict, Set, Tuple, Optional
 
+from Lightpath import Lightpath
+
 
 class ExtendedCAG:
     def __init__(self, network, demand, K=3, maxnum_PL=5):
@@ -42,6 +44,7 @@ class ExtendedCAG:
                 for lp in existing_lps:
                     if lp.can_accommodate(self.demand):
                         edge_info = {
+                            'source': u,
                             "type": "EL",
                             "lightpath": lp,
                             "weight": self.calc_lp_score(lp),
@@ -58,6 +61,7 @@ class ExtendedCAG:
                 for eel_info in extendable_lps:
                     extended_lp = eel_info["extended_lightpath"]
                     edge_info = {
+                        'source': u,
                         "type": "EEL",
                         "lightpath": eel_info,
                         "weight": self.calc_lp_score(extended_lp),
@@ -83,6 +87,8 @@ class ExtendedCAG:
                     if can_create:
                         edge_info = {
                             "type": "PL",
+                            'source': u,
+                            "lightpath": Lightpath(u,v,mode,fs_block,path_G0),
                             "transponder_mode": mode,
                             "path_G0": path_G0,
                             "fs_block": fs_block,

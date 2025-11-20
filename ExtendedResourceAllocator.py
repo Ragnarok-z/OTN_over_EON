@@ -16,11 +16,19 @@ class ExtendedResourceAllocator:
         # 使用带G0限制的优化SPFA寻找最短路径
         distance, path, edge_sequence, found = optimized_spfa_with_g0_constraint(cag, demand.source, demand.destination)
 
+        # if demand.id == 100:
+        #     print("100100", path, edge_sequence)
+
         if not found:
             return False, "No path found with G0 constraints"
 
         # 分配资源
         success, message = self.allocate_path_resources(edge_sequence, demand)
+
+        # if demand.id == 100:
+        #     print("100100100", path, edge_sequence)
+
+
         return success, message
 
     def allocate_path_resources(self, edge_sequence, demand):
