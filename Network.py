@@ -5,7 +5,7 @@ from Lightpath import Lightpath
 from params import *
 
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import numba as nb
 
@@ -19,7 +19,12 @@ class Network:
         self.otn_switches = {}  # OTN switching capacity at each node
         self.fs_usage = {}  # Frequency slot usage on each G0 edge
         self.load_topology(topology_file)
+
         self.initialize_network()
+
+        self.edge_betweenness = {}
+        self.max_bitrate_per_fs = None
+        self.calculate_edge_betweenness()
 
     def load_topology(self, topology_file):
         with open(topology_file, 'r') as f:
@@ -456,3 +461,75 @@ class Network:
         """找到源和目的地之间的所有现有光路"""
         return [lp for lp in self.lightpaths
                 if lp.source == source and lp.destination == destination]
+
+    def calculate_edge_betweenness(self):
+        """计算G0层所有边的介数中心性"""
+        nodes = list(self.nodes)
+        n = len(nodes)
+        node_to_index = {node: i for i, node in enumerate(nodes)}
+
+        # 初始化介数矩阵
+        edge_betweenness = defaultdict(float)
+
+        # 对每个节点作为源点计算
+        for s in nodes:
+            # 单源最短路径
+            dist = {node: float('inf') for node in nodes}
+            dist[s] = 0
+            sigma = {node: 0 for node in nodes}  # 最短路径数量
+            sigma[s] = 1
+            pred = {node: [] for node in nodes}  # 前驱节点
+            stack = []
+            queue = deque([s])
+
+            while queue:
+                v = queue.popleft()
+                stack.append(v)
+                for w in self.edges[v]:
+                    # 发现新路径
+                    if dist[w] == float('inf'):
+                        dist[w] = dist[v] + 1
+                        queue.append(w)
+
+                    # 找到最短路径
+                    if dist[w] == dist[v] + 1:
+                        sigma[w] += sigma[v]
+                        pred[w].append(v)
+
+            # 反向累积依赖值
+            delta = {node: 0 for node in nodes}
+            while stack:
+                w = stack.pop()
+                for v in pred[w]:
+                    # 计算边(v, w)的贡献
+                    edge = tuple(sorted((v, w)))
+                    contribution = (sigma[v] / sigma[w]) * (1 + delta[w])
+                    edge_betweenness[edge] += contribution
+                    delta[v] += contribution
+
+        # 无向图，每条边的介数要除以2
+        for edge in edge_betweenness:
+            edge_betweenness[edge] /= 2.0
+
+        self.edge_betweenness = edge_betweenness
+
+    def get_edge_betweenness(self, u, v):
+        """获取边(u,v)的介数"""
+        edge = tuple(sorted((u, v)))
+        return self.edge_betweenness.get(edge, 0.0)
+
+    def get_max_bitrate_per_fs(self):
+        """计算TRANSPONDER_MODES中最大的bitrate/num_fs比值"""
+        if self.max_bitrate_per_fs:
+            return self.max_bitrate_per_fs
+        max_ratio = 0.0
+        for mode in TRANSPONDER_MODES:
+            bitrate = mode["bitrate"]
+            num_fs = mode["fs_required"]
+            ratio = bitrate / num_fs
+            if ratio > max_ratio:
+                max_ratio = ratio
+        self.max_bitrate_per_fs = max_ratio
+        return max_ratio
+
+
