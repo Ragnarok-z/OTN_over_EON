@@ -36,6 +36,9 @@ def run_experiments(topology_file, output_dir="results"):
     # 选择在G0层面的K最短路内进行路由
     K = 3
 
+    # 是否考虑双层碎片
+    include_OTN_frag = False
+
     # Define defragmentation params
     defarg_params = {
         "en":False
@@ -59,7 +62,7 @@ def run_experiments(topology_file, output_dir="results"):
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
-            simulator.run(policy=policy,K=K)
+            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag)
 
             # Store results
             metrics = simulator.get_metrics()

@@ -7,15 +7,16 @@ from collections import defaultdict, deque
 from params import *
 
 class CAG:
-    def __init__(self, network, demand, K=3):
+    def __init__(self, network, demand, K=3, include_OTN_frag=False):
         self.network = network
         self.demand = demand
         self.K = K
+        self.include_OTN_frag = include_OTN_frag  # 添加新参数
         self.nodes = set()
         self.edges = defaultdict(dict)  # {u: {v: edge_info}}
-        self.build_cag()
+        self.build_cag(include_OTN_frag)
 
-    def build_cag(self):
+    def build_cag(self, include_OTN_frag=False):
         # Find K shortest paths in G0
         k_shortest_paths = self.network.find_k_shortest_paths(
             self.demand.source, self.demand.destination, self.K)
@@ -41,11 +42,16 @@ class CAG:
                 if existing_lps:
                     # Select the best fit (simplified - just take the first one with enough capacity)
                     # completed - selecting the EL that most closely meets the demand’s bandwidth requirements with minimal excess capacity.
-                    min_capacity, best_lp = -1, None
-                    for lp in existing_lps:
-                        if lp.can_accommodate(self.demand):
-                            if best_lp is None or lp.remaining_capacity() < min_capacity:
-                                min_capacity, best_lp = lp.remaining_capacity(), lp
+                    if include_OTN_frag:
+                        # 使用新策略：select_EL函数
+                        best_lp = self.select_EL([lp for lp in existing_lps if lp.can_accommodate(self.demand)])
+                    else:
+                        # 使用原策略
+                        min_capacity, best_lp = -1, None
+                        for lp in existing_lps:
+                            if lp.can_accommodate(self.demand):
+                                if best_lp is None or lp.remaining_capacity() < min_capacity:
+                                    min_capacity, best_lp = lp.remaining_capacity(), lp
                     if best_lp:
                         self.edges[u][v] = {"type": "EL", "lightpath": best_lp}
                         continue
@@ -53,19 +59,243 @@ class CAG:
                 # Check for extendable lightpaths
                 extendable_lps = self.network.find_extendable_lightpaths(u, v, self.demand)
                 if extendable_lps:
-                    # Simplified - just take the first one
-                    self.edges[u][v] = {"type": "EEL", "lightpath": extendable_lps[0]}
-                    continue
+                    if include_OTN_frag:
+                        # 使用新策略：select_EEL函数
+                        best_eel = self.select_EEL(extendable_lps)
+                    else:
+                        # 使用原策略：取第一个
+                        best_eel = extendable_lps[0] if extendable_lps else None
+
+                    if best_eel:
+                        self.edges[u][v] = {"type": "EEL", "lightpath": best_eel}
+                        continue
 
                 # Check if we can create a new lightpath
-                can_create, mode, path_G0, fs_block = self.network.can_create_lightpath(u, v, self.demand)
-                if can_create:
-                    self.edges[u][v] = {
-                        "type": "PL",
-                        "transponder_mode": mode,
-                        "path_G0": path_G0,
-                        "fs_block": fs_block
-                    }
+                if include_OTN_frag:
+                    # 使用新策略：find_PL + select_PL
+                    pl_list = self.find_PL(u, v, self.demand, k_pl=3)
+                    best_pl = self.select_PL(pl_list)
+                    if best_pl:
+                        self.edges[u][v] = {
+                            "type": "PL",
+                            "transponder_mode": best_pl["transponder_mode"],
+                            "path_G0": best_pl["path_G0"],
+                            "fs_block": best_pl["fs_block"]
+                        }
+                else:
+                    # 使用原策略
+                    can_create, mode, path_G0, fs_block = self.network.can_create_lightpath(u, v, self.demand)
+                    if can_create:
+                        self.edges[u][v] = {
+                            "type": "PL",
+                            "transponder_mode": mode,
+                            "path_G0": path_G0,
+                            "fs_block": fs_block
+                        }
+
+    # 在 CAG 类中添加以下方法
+
+    def select_EL(self, EL_lst):
+        """
+        从平行EL列表中选择一个EL
+        选择标准：
+        1. 优先选择占用G0链路数最少的EL
+        2. 如果G0链路数相同，选择剩余容量最少的EL（最接近需求容量的）
+        """
+        if not EL_lst:
+            return None
+
+        # 如果只有一个EL，直接返回
+        if len(EL_lst) == 1:
+            return EL_lst[0]
+
+        # 计算每个EL的G0链路数和剩余容量
+        el_info = []
+        for i,el in enumerate(EL_lst):
+            # 计算G0链路数（物理路径的跳数）
+            g0_link_count = len(el.path_in_G0) - 1
+
+            # 计算剩余容量
+            remaining_capacity = el.remaining_capacity()
+
+            el_info.append({
+                'id': i if i>0 else '000000000000',
+                'el': el,
+                'g0_link_count': g0_link_count,
+                'remaining_capacity': remaining_capacity
+            })
+
+        # 按照选择标准排序：
+        # 1. 优先G0链路数少的（升序）
+        # 2. 然后剩余容量少的（升序）
+        sorted_els = sorted(el_info,
+                            key=lambda x: (x['g0_link_count'], x['remaining_capacity']))
+
+        # print(len(EL_lst), sorted_els[0]['id'])
+
+        # 返回最优的EL
+        return sorted_els[1]['el']
+
+    def select_EEL(self, extendable_lps):
+        """
+        从可扩展光路列表中选择一个EEL
+        选择标准：
+        1. 优先选择剩余容量最少的EEL（扩展后光路的剩余容量）
+        2. 如果剩余容量相同，选择G0中起始频隙最靠前的
+        """
+        if not extendable_lps:
+            return None
+
+        # 如果只有一个EEL，直接返回
+        if len(extendable_lps) == 1:
+            return extendable_lps[0]
+
+        # 计算每个EEL的剩余容量和起始频隙
+        eel_info = []
+        for eel in extendable_lps:
+            # 获取扩展后的光路
+            extended_lightpath = eel["extended_lightpath"]
+
+            # 计算扩展后光路的剩余容量
+            # 注意：这里计算的是扩展后光路容纳当前需求后的剩余容量
+            demand_capacity = self.demand.traffic_class.value
+            remaining_capacity = extended_lightpath.capacity - (
+                        eel["original_lightpath"].used_capacity + demand_capacity)
+
+            # 获取起始频隙
+            start_fs = extended_lightpath.fs_allocated[0]
+
+            eel_info.append({
+                'eel': eel,
+                'remaining_capacity': remaining_capacity,
+                'start_fs': start_fs
+            })
+
+        # 按照选择标准排序：
+        # 1. 优先剩余容量少的（升序）
+        # 2. 然后起始频隙小的（升序）
+        sorted_eels = sorted(eel_info,
+                             key=lambda x: (x['remaining_capacity'], x['start_fs']))
+
+        # 返回最优的EEL
+        return sorted_eels[0]['eel']
+
+    def find_PL(self, u, v, demand, k_pl=3):
+        """
+        基于shortest-path, first-k-fit方案寻找k_pl个PL
+        返回前k个可建立的PL配置
+        """
+        # 找到最短路径
+        path_G0 = self.network.dijkstra(u, v)
+        if not path_G0:
+            return []
+
+        required_capacity = demand.traffic_class.value
+        path_length = self.network.path_length(path_G0)
+
+        available_pls = []
+
+        # 检查所有可能的传输机模式
+        for mode in TRANSPONDER_MODES:
+            if mode["capacity"] >= required_capacity and path_length <= mode["max_spans"] * length_of_span:
+                # 使用first-k-fit策略找到多个可用的频谱块
+                fs_blocks = self.find_k_available_fs_blocks(path_G0, mode["fs_required"], k_pl)
+
+                for fs_block in fs_blocks:
+                    if fs_block:
+                        available_pls.append({
+                            "transponder_mode": mode,
+                            "path_G0": path_G0,
+                            "fs_block": fs_block
+                        })
+
+                        # 如果已经找到k_pl个，就停止
+                        if len(available_pls) >= k_pl:
+                            break
+
+        return available_pls
+
+    def find_k_available_fs_blocks(self, path, required_fs, k):
+        """
+        找到前k个可用的连续频谱块
+        """
+        edges_in_path = []
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            edges_in_path.append((u, v))
+
+        # 使用numpy的位运算来快速查找
+        common_available = np.ones(768, dtype=bool)
+        for edge in edges_in_path:
+            common_available &= ~self.network.fs_usage[edge]
+
+        if not np.any(common_available):
+            return []
+
+        # 查找所有连续可用的频隙块
+        diff = np.diff(np.concatenate(([False], common_available, [False])).astype(int))
+        starts = np.where(diff == 1)[0]
+        ends = np.where(diff == -1)[0]
+
+        available_blocks = []
+        for start, end in zip(starts, ends):
+            block_size = end - start
+            if block_size >= required_fs:
+                # 这个连续块中可以容纳多个频谱块
+                num_blocks_in_segment = block_size - required_fs + 1
+                for i in range(min(num_blocks_in_segment, k - len(available_blocks))):
+                    fs_block = (start + i, start + i + required_fs - 1)
+                    available_blocks.append(fs_block)
+                    if len(available_blocks) >= k:
+                        break
+            if len(available_blocks) >= k:
+                break
+
+        return available_blocks[:k]
+
+    def select_PL(self, pl_list):
+        """
+        从PL列表中选择一个PL
+        选择标准：
+        1. 优先选择频谱效率最高的（总容量 / 单link上消耗的FS数量）
+        2. 如果频谱效率相同，选择G0中起始频隙最靠前的
+        """
+        if not pl_list:
+            return None
+
+        # 如果只有一个PL，直接返回
+        if len(pl_list) == 1:
+            return pl_list[0]
+
+        # 计算每个PL的频谱效率和起始频隙
+        pl_info = []
+        for pl in pl_list:
+            transponder_mode = pl["transponder_mode"]
+            fs_block = pl["fs_block"]
+
+            # 计算频谱效率 = 总容量 / 单link上消耗的FS数量
+            total_capacity = transponder_mode["capacity"]
+            fs_consumed = transponder_mode["fs_required"]  # 每个链路消耗的FS数量
+            spectral_efficiency = total_capacity / fs_consumed
+
+            # 获取起始频隙
+            start_fs = fs_block[0]
+
+            pl_info.append({
+                'pl': pl,
+                'spectral_efficiency': spectral_efficiency,
+                'start_fs': start_fs
+            })
+
+        # 按照选择标准排序：
+        # 1. 优先频谱效率高的（降序）
+        # 2. 然后起始频隙小的（升序）
+        sorted_pls = sorted(pl_info,
+                            key=lambda x: (-x['spectral_efficiency'], x['start_fs']))
+
+        # 返回最优的PL
+        return sorted_pls[0]['pl']
+
 
     # 在CAG.py中添加以下方法
     def calculate_abp_fragmentation(self, path_G0):

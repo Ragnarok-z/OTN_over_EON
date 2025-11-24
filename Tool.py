@@ -5,7 +5,44 @@ import re
 # Constants and parameters
 class TrafficClass(Enum):
     GE10 = 10
+    GE20 = 20
+    GE30 = 30
+    GE40 = 40
+    GE50 = 50
+    GE60 = 60
+    GE70 = 70
+    GE80 = 80
+    GE90 = 90
     GE100 = 100
+    GE110 = 110
+    GE120 = 120
+    GE130 = 130
+    GE140 = 140
+    GE150 = 150
+    GE160 = 160
+    GE170 = 170
+    GE180 = 180
+    GE190 = 190
+    GE200 = 200
+    GE210 = 210
+    GE220 = 220
+    GE230 = 230
+    GE240 = 240
+    GE250 = 250
+    GE260 = 260
+    GE270 = 270
+    GE280 = 280
+    GE290 = 290
+    GE300 = 300
+    GE310 = 310
+    GE320 = 320
+    GE330 = 330
+    GE340 = 340
+    GE350 = 350
+    GE360 = 360
+    GE370 = 370
+    GE380 = 380
+    GE390 = 390
     GE400 = 400
 
 class EventType(Enum):
