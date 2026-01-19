@@ -31,7 +31,7 @@ def run_experiments(topology_file, output_dir="results"):
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
-    policies = ["MinEn", "MinPB"]
+    policies = ["MinEn", "MinPB","OneFrag"]
 
     # 选择在G0层面的K最短路内进行路由
     K = 3
@@ -53,6 +53,9 @@ def run_experiments(topology_file, output_dir="results"):
         "avg_lightpath_usage": [],
         "spectrum_usage":[]
     } for policy in policies}
+
+    results['description'] = "base"
+    print("Exp description",results['description'])
 
     # Run simulations for each traffic intensity and policy
     for policy in policies:
