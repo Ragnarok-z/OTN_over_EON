@@ -296,6 +296,20 @@ class CAG:
         # 返回最优的PL
         return sorted_pls[0]['pl']
 
+    ##################
+    ##  OEFM的相关计算
+    ##################
+    # 计算E
+    def calc_E(self, c, n):
+        E = 0
+        return E
+
+    # 计算OEFM
+    def calc_OEFM(self, k, cap, sumcap, n, posx, sumx):
+        sum_E = 0
+        for i in range(k):
+            sum_E += self.calc_E(cap[i], n) / (1 + posx / sumx)
+        return 1 - sum_E / k / self.calc_E(sumcap, n)
 
     # 在CAG.py中添加以下方法
     def calculate_abp_fragmentation(self, path_G0):
