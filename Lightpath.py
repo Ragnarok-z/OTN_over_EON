@@ -3,7 +3,7 @@ class Lightpath:
         self.source = source
         self.destination = destination
         self.transponder_mode = transponder_mode
-        self.fs_allocated = fs_allocated  # List of frequency slots
+        self.fs_allocated = fs_allocated  # [began, end]
         self.path_in_G0 = path_in_G0  # Physical path in G0 layer
         self.capacity = transponder_mode["capacity"]
         self.used_capacity = 0

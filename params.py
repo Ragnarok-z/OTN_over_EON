@@ -36,9 +36,10 @@ TRANSPONDER_MODES = [
 
 # Traffic engineering policy coefficients (from Table IV in the paper)
 POLICY_COEFFICIENTS = {
-    "MinEn": {"c0": 100000, "c0_new": 10000, "c_new": 1000, "cf": 10, "c_prime": 0, "cu": 0, "c_old": 1000},
-    "MaxMux": {"c0": 0, "c0_new": 1, "c_new": 100, "cf": 0, "c_prime": 0, "cu": 0, "c_old": 0},
-    "MaxSE": {"c0": 0, "c0_new": 0, "c_new": 1, "cf": 0, "c_prime": 0, "cu": 1, "c_old": 1},
-    "MinPB": {"c0": 0.000001, "c0_new": 0, "c_new": 1000, "cf": 0, "c_prime": 0.001, "cu": 0, "c_old": 1000},
-    "OneFrag": {"c0": 0.000001, "c0_new": 0, "c_new": 1000, "cf": 10, "c_prime": 0.001, "cu": 0, "c_old": 1000}
+    "MinEn": {"c0": 100000, "c0_new": 10000, "c_new": 1000, "cf_EON": 10, "cf_OTN": 0, "c_prime": 0, "cu": 0, "c_old": 1000},
+    "MaxMux": {"c0": 0, "c0_new": 1, "c_new": 100, "cf_EON": 0, "cf_OTN": 0, "c_prime": 0, "cu": 0, "c_old": 0},
+    "MaxSE": {"c0": 0, "c0_new": 0, "c_new": 1, "cf_EON": 0, "cf_OTN": 0, "c_prime": 0, "cu": 1, "c_old": 1},
+    "MinPB": {"c0": 0.000001, "c0_new": 0, "c_new": 1000, "cf_OTN": 0, "cf_EON": 0, "c_prime": 0.001, "cu": 0, "c_old": 1000},
+    "OneFrag": {"c0": 0.000001, "c0_new": 0, "c_new": 1000, "cf_OTN": 0, "cf_EON": 10, "c_prime": 0.001, "cu": 0, "c_old": 1000},
+    "DualFrag": {"c0": 0.000001, "c0_new": 0, "c_new": 1000, "cf_OTN": 10, "cf_EON": 10, "c_prime": 0.001, "cu": 0, "c_old": 1000}
 }

@@ -309,8 +309,30 @@ class CAG:
     def calc_OEFM(self, k, cap, sumcap, n, posx, sumx):
         sum_E = 0
         for i in range(k):
-            sum_E += self.calc_E(cap[i], n) / (1 + posx / sumx)
+            sum_E += self.calc_E(cap[i], n) / (1 + posx[i] / sumx)
         return 1 - sum_E / k / self.calc_E(sumcap, n)
+
+    # 计算delta_f_OTN
+    def calculate_delta_f_OTN(self, lps, select, n):
+
+        k = len(lps)
+        cap = [lp.remaining_capacity() for lp in lps]
+        sumcap = sum(cap)
+        posx = [(lp.fs_allocated[0]+lp.fs_allocated[1])/2 for lp in lps]
+        for i in range(len(posx)):
+            posx[i] = posx[i]+posx[i-1]
+        sumx = posx[-1]
+        f_OTN_base = self.calc_OEFM(k, cap, sumcap, n, posx, sumx)
+
+        delta_f_OTN = []
+        required_cap = self.demand.traffic_class.value
+        sumcap -= required_cap
+        for i in select:
+            cap[i] -= required_cap
+            delta_f_OTN.append(self.calc_OEFM(k, cap, sumcap, n, posx, sumx) - f_OTN_base)
+            cap[i] += required_cap
+        return delta_f_OTN
+
 
     # 在CAG.py中添加以下方法
     def calculate_abp_fragmentation(self, path_G0):
@@ -385,7 +407,7 @@ class CAG:
 
         return free_blocks
 
-    def calculate_delta_f(self,path_G0, fs_block):
+    def calculate_delta_f_EON(self,path_G0, fs_block):
         """
         计算建立新光路后的碎片化变化量 Δf
         """
@@ -428,16 +450,23 @@ class CAG:
             h = len(path_G0) - 1
             # delta_f = 0  # Simplified - actual would calculate fragmentation change
             # 计算实际的Δf（碎片化变化）
-            if coeffs["cf"]:
-                delta_f = self.calculate_delta_f(path_G0, fs_block)
+            if coeffs["cf_EON"]:
+                delta_f_EON = self.calculate_delta_f_EON(path_G0, fs_block)
             else:
-                delta_f=0
+                delta_f_EON=0
+
+            if coeffs["cf_OTN"]:
+                delta_f_OTN = self.calculate_delta_f_OTN()
+            else:
+                delta_f_OTN = 0
+
             u_value = mode["bitrate"]
 
             weight = (coeffs["c0"] + 1 * (
                     coeffs["c0_new"] +
                     coeffs["c_new"] * h +
-                    coeffs["cf"] * delta_f +
+                    coeffs["cf_EON"] * delta_f_EON +
+                    coeffs["cf_OTN"] * delta_f_OTN +
                     coeffs["c_prime"] * h ** 2 +
                     coeffs["cu"] * 10 ** (-u_value)
             ))
