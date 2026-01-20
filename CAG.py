@@ -7,13 +7,15 @@ from collections import defaultdict, deque
 from params import *
 
 class CAG:
-    def __init__(self, network, demand, K=3, include_OTN_frag=False):
+    def __init__(self, network, demand, K=3, include_OTN_frag=False, calc_E_k=5, E_loaded=None):
         self.network = network
         self.demand = demand
         self.K = K
         self.include_OTN_frag = include_OTN_frag  # 添加新参数
         self.nodes = set()
         self.edges = defaultdict(dict)  # {u: {v: edge_info}}
+        self.calc_E_k = 5
+        self.E_loaded = E_loaded
         self.build_cag(include_OTN_frag)
 
     def build_cag(self, include_OTN_frag=False):
@@ -301,8 +303,7 @@ class CAG:
     ##################
     # 计算E
     def calc_E(self, c, n):
-        E = 0
-        return E
+        return self.E_loaded[c//10][n]
 
     # 计算OEFM
     def calc_OEFM(self, k, cap, sumcap, n, posx, sumx):

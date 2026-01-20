@@ -6,6 +6,8 @@ from Network import Network
 from Simulator import Simulator
 from Tool import get_next_exp_number
 
+import pickle
+
 def run_experiments(topology_file, output_dir="results"):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -38,6 +40,10 @@ def run_experiments(topology_file, output_dir="results"):
 
     # 是否考虑双层碎片
     include_OTN_frag = False
+    calc_E_k = 5
+    E_loaded = None  # 提前定义
+    with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
+        E_loaded = pickle.load(f)
 
     # Define defragmentation params
     defarg_params = {
@@ -65,7 +71,7 @@ def run_experiments(topology_file, output_dir="results"):
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
-            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag)
+            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded)
 
             # Store results
             metrics = simulator.get_metrics()
