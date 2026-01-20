@@ -12,9 +12,10 @@ class CAG:
         self.demand = demand
         self.K = K
         self.include_OTN_frag = include_OTN_frag  # 添加新参数
+        # print('init', self.include_OTN_frag)
         self.nodes = set()
         self.edges = defaultdict(dict)  # {u: {v: edge_info}}
-        self.calc_E_k = 5
+        self.calc_E_k = calc_E_k
         self.E_loaded = E_loaded
         self.build_cag(include_OTN_frag)
 
@@ -107,10 +108,24 @@ class CAG:
         if not EL_lst:
             return None
 
+        el_info = []
+        if self.include_OTN_frag=='OEFM':
+            select = [i for i in range(len(EL_lst))]
+            delta_f_OTN = self.calculate_delta_f_OTN(EL_lst,select, self.calc_E_k)
+            for i, el in enumerate(EL_lst):
+                el_info.append({
+                    id: i if i>0 else '000000000000',
+                    'el': el,
+                    'delta_f_OTN': delta_f_OTN[i]
+                })
+            sorted_els = sorted(el_info, key=lambda x: (x['delta_f_OTN']))
+            # print('in OEFM')
+            return sorted_els[0]['el']
+
+
         # 如果只有一个EL，直接返回
         if len(EL_lst) == 1:
             return EL_lst[0]
-
         # 计算每个EL的G0链路数和剩余容量
         el_info = []
         for i,el in enumerate(EL_lst):
@@ -136,7 +151,7 @@ class CAG:
         # print(len(EL_lst), sorted_els[0]['id'])
 
         # 返回最优的EL
-        return sorted_els[1]['el']
+        return sorted_els[0]['el']
 
     def select_EEL(self, extendable_lps):
         """
@@ -151,6 +166,20 @@ class CAG:
         # 如果只有一个EEL，直接返回
         if len(extendable_lps) == 1:
             return extendable_lps[0]
+
+        eel_info = []
+        eel_lst = [eel['extended_lightpath'] for eel in extendable_lps]
+        if self.include_OTN_frag=='OEFM':
+            select = [i for i in range(len(eel_lst))]
+            delta_f_OTN = self.calculate_delta_f_OTN(eel_lst, select, self.calc_E_k)
+            for i, eel in enumerate(extendable_lps):
+                eel_info.append({
+                    'id': i if i > 0 else '000000000000',
+                    'eel': eel,
+                    'delta_f_OTN': delta_f_OTN[i]
+                })
+            sorted_eels = sorted(eel_info, key=lambda x: (x['delta_f_OTN']))
+            return sorted_eels[0]['eel']
 
         # 计算每个EEL的剩余容量和起始频隙
         eel_info = []
@@ -310,7 +339,11 @@ class CAG:
         sum_E = 0
         for i in range(k):
             sum_E += self.calc_E(cap[i], n) / (1 + posx[i] / sumx)
-        return 1 - sum_E / k / self.calc_E(sumcap, n)
+
+        calc_E_sumcap = self.calc_E(sumcap, n)
+        if calc_E_sumcap == 0:
+            return 0
+        return 1 - sum_E / k / calc_E_sumcap
 
     # 计算delta_f_OTN
     def calculate_delta_f_OTN(self, lps, select, n):

@@ -6,6 +6,8 @@ from Network import Network
 from Simulator import Simulator
 from Tool import get_next_exp_number
 
+import pickle
+
 def run_experiments(topology_file, output_dir="results"):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -31,13 +33,17 @@ def run_experiments(topology_file, output_dir="results"):
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
-    policies = ["MinEn", "MinPB"]
+    policies = ["MinEn", "MinPB","OneFrag"]
 
     # 选择在G0层面的K最短路内进行路由
     K = 3
 
     # 是否考虑双层碎片
     include_OTN_frag = True
+    calc_E_k = 5
+    E_loaded = None  # 提前定义
+    with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
+        E_loaded = pickle.load(f)
 
     # Define defragmentation params
     defarg_params = {
@@ -54,6 +60,9 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
+    results['description'] = "include_OTN_frag=True, no OEFM, debug"
+    print("Exp description",results['description'])
+
     # Run simulations for each traffic intensity and policy
     for policy in policies:
         print(f"  Testing policy: {policy}")
@@ -62,7 +71,7 @@ def run_experiments(topology_file, output_dir="results"):
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
-            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag)
+            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded)
 
             # Store results
             metrics = simulator.get_metrics()

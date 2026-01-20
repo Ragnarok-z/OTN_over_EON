@@ -39,7 +39,7 @@ def run_experiments(topology_file, output_dir="results"):
     K = 3
 
     # 是否考虑双层碎片
-    include_OTN_frag = False
+    include_OTN_frag = "OEFM"
     calc_E_k = 5
     E_loaded = None  # 提前定义
     with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
@@ -60,7 +60,7 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
-    results['description'] = "base"
+    results['description'] = "include_OTN_frag='OEFM', no beam search"
     print("Exp description",results['description'])
 
     # Run simulations for each traffic intensity and policy
