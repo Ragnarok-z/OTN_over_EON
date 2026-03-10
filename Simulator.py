@@ -8,7 +8,7 @@ import pickle
 
 
 class Simulator:
-    def __init__(self, network, traffic_intensity=10, num_demands=1000, random_seed=423, defrag_params={}, output_dir=None):
+    def __init__(self, network, traffic_intensity=10, num_demands=1000, random_seed=423, defrag_params={}, output_dir=None, overlap_num=2,sp_algo='base'):
         self.network = network
         self.traffic_intensity = traffic_intensity
         self.num_demands = num_demands
@@ -20,6 +20,8 @@ class Simulator:
         self.blocked_demands = []
         self.completed_demands = []
         self.output_dir = output_dir
+        self.sp_algo = sp_algo
+        self.overlap_num = overlap_num
 
         # 用于持续收集指标的数据结构
         self.metrics_history = {
@@ -219,8 +221,7 @@ class Simulator:
         #     pickle.dump(cag, f)
 
         # Find shortest path using label-setting algorithm
-
-        path = cag.find_shortest_path(policy, max_hops)
+        path = cag.find_shortest_path(policy=policy, max_hops=max_hops, overlap_num=self.overlap_num,sp_algo=self.sp_algo)
 
         # for i in range(10):
         #     path_ = cag.find_shortest_path(policy, max_hops)

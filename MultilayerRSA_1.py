@@ -25,7 +25,7 @@ def run_experiments(topology_file, output_dir="results"):
     traffic_intensities = range(300, 510, 50)
 
     # Define number of demand
-    num_demands = 20000
+    num_demands = 10000
 
     # Defind random seed
     random_seed = 423
@@ -33,13 +33,20 @@ def run_experiments(topology_file, output_dir="results"):
     # Define policies to test
     policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
-    policies = ["MinEn", "MinPB","OneFrag"]
+    # policies = ["MinEn", "MinPB","OneFrag"]
+    policies = ["MinEn", "MinPB"]
 
     # 选择在G0层面的K最短路内进行路由
     K = 3
 
     # 是否考虑双层碎片
     include_OTN_frag = "OEFM"
+    # include_OTN_frag = None
+
+    # 是否使用新算法
+    sp_algo = "LOC-SP-algo"
+    overlap_num = 15
+
     calc_E_k = 5
     E_loaded = None  # 提前定义
     with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
@@ -60,7 +67,7 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
-    results['description'] = "include_OTN_frag='OEFM', no beam search"
+    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}"
     print("Exp description",results['description'])
 
     # Run simulations for each traffic intensity and policy
@@ -70,7 +77,7 @@ def run_experiments(topology_file, output_dir="results"):
             print(f"Running simulations for traffic intensity: {intensity} Erlang")
 
             # Create a new simulator for each run to ensure clean state
-            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
+            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir,overlap_num,sp_algo)
             simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded)
 
             # Store results

@@ -505,7 +505,15 @@ class CAG:
             ))
             return weight
 
-    def find_shortest_path(self, policy, max_hops=5):
+    def find_shortest_path(self, policy, max_hops=5, overlap_num=2, sp_algo='base'):
+        if sp_algo=='base':
+            return self.find_shortest_path_base(policy=policy, max_hops=max_hops)
+        elif sp_algo=="LOC-SP-algo":
+            return self.find_shortest_path_LOC_SP(policy=policy, max_hops=max_hops, overlap_num=overlap_num)
+
+
+
+    def find_shortest_path_base(self, policy, max_hops=5):
         # Implement label-setting algorithm for constrained shortest path
         source = self.demand.source
         destination = self.demand.destination
@@ -578,3 +586,145 @@ class CAG:
                     label_id += 1
 
         return None  # No path found
+
+    def find_shortest_path_LOC_SP(self, policy, max_hops=5, overlap_num=2):
+        """
+        带有限重叠约束的改进型Dijkstra算法
+        输入：
+            policy: 流量工程策略（与原函数一致）
+            max_hops: 最大跳数约束（与原函数一致）
+            overlap_num: 最大允许重叠数（总使用G0链路数 - 唯一G0链路数 ≤ 此值）
+        输出：最优路径列表（None表示无可行路径），与原函数输入输出完全一致
+        约束：
+            1. 硬约束：EEL/PL的G0链路不可与已用EEL/PL链路重复；
+            2. 软约束：总重叠数 = 总使用G0链路数 - 唯一G0链路数 ≤ overlap_num；
+        """
+        source = self.demand.source
+        destination = self.demand.destination
+
+        # 边界判断：源/目的不在CAG节点集中
+        if source not in self.nodes or destination not in self.nodes:
+            return None
+
+        # -------------------------- 状态定义 --------------------------
+        # 状态键：(当前节点, 已用EEL/PL链路集(frozenset), 总重叠数, 已跳数)
+        # 状态值：到达该状态的最小代价
+        state_cost = defaultdict(lambda: float('inf'))
+        # 前驱记录：(状态键) → (前驱节点, 链路使用统计字典, 路径列表)
+        # 链路使用统计字典：{G0链路元组: 使用次数}
+        state_prev = dict()
+
+        # 初始化：源节点，无已用EEL/PL链路，无链路使用，重叠数0，跳数0，代价0
+        init_used_eel_pl = frozenset()  # 已用EEL/PL链路（硬约束）
+        init_link_count = defaultdict(int)  # 所有链路使用统计（软约束）
+        init_overlap = 0  # 初始重叠数=0
+        init_hops = 0
+        init_state = (source, init_used_eel_pl, init_overlap, init_hops)
+        state_cost[init_state] = 0
+        state_prev[init_state] = (None, init_link_count, [source])
+
+        # 优先级队列：(总代价, 当前节点, 已用EEL/PL链路集, 总重叠数, 已跳数)
+        pq = []
+        heapq.heappush(pq, (0, source, init_used_eel_pl, init_overlap, init_hops))
+
+        # 最优路径记录
+        best_path = None
+        min_total_cost = float('inf')
+
+        # -------------------------- 核心遍历 --------------------------
+        while pq:
+            # 弹出当前最小代价状态
+            curr_cost, curr_node, curr_used_eel_pl, curr_overlap, curr_hops = heapq.heappop(pq)
+
+            # 剪枝1：当前代价已大于已知最优解
+            if curr_cost > min_total_cost:
+                continue
+
+            # 剪枝2：跳数超限（无法继续扩展）
+            if curr_hops >= max_hops:
+                # 若到达目的节点，更新最优解
+                if curr_node == destination and curr_cost < min_total_cost:
+                    min_total_cost = curr_cost
+                    best_path = state_prev[(curr_node, curr_used_eel_pl, curr_overlap, curr_hops)][2]
+                continue
+
+            # 到达目的节点，更新最优解
+            if curr_node == destination:
+                min_total_cost = curr_cost
+                best_path = state_prev[(curr_node, curr_used_eel_pl, curr_overlap, curr_hops)][2]
+                continue
+
+            # 遍历当前节点的所有出边
+            for neighbor in self.edges.get(curr_node, {}):
+                edge_info = self.edges[curr_node][neighbor]
+                # 1. 计算当前边的权重（与原逻辑一致）
+                edge_weight = self.calculate_edge_weight(curr_node, neighbor, policy)
+                new_cost = curr_cost + edge_weight
+                new_hops = curr_hops + 1
+
+                # 2. 提取当前边的G0链路（统一格式：tuple(sorted((u,v))) 保证无向）
+                if edge_info["type"] == "EL":
+                    # EL链路：提取其G0路径
+                    lightpath = edge_info["lightpath"]
+                    edge_g0_links = [tuple(sorted((lightpath.path_in_G0[i], lightpath.path_in_G0[i + 1])))
+                                     for i in range(len(lightpath.path_in_G0) - 1)]
+                    is_eel_pl = False  # EL不参与硬约束
+                elif edge_info["type"] == "EEL":
+                    # EEL链路：提取扩展后的G0路径
+                    extended_lp = edge_info["lightpath"]["extended_lightpath"]
+                    edge_g0_links = [tuple(sorted((extended_lp.path_in_G0[i], extended_lp.path_in_G0[i + 1])))
+                                     for i in range(len(extended_lp.path_in_G0) - 1)]
+                    is_eel_pl = True  # EEL参与硬约束
+                else:  # PL
+                    # PL链路：提取新建的G0路径
+                    path_G0 = edge_info["path_G0"]
+                    edge_g0_links = [tuple(sorted((path_G0[i], path_G0[i + 1])))
+                                     for i in range(len(path_G0) - 1)]
+                    is_eel_pl = True  # PL参与硬约束
+
+                # 3. 硬约束检查：EEL/PL链路不可与已用EEL/PL链路重复
+                if is_eel_pl:
+                    # 检查当前EEL/PL的G0链路是否与已用EEL/PL链路重叠
+                    if set(edge_g0_links) & set(curr_used_eel_pl):
+                        continue  # 硬约束冲突，跳过
+                    # 新的已用EEL/PL链路集
+                    new_used_eel_pl = frozenset(set(curr_used_eel_pl) | set(edge_g0_links))
+                else:
+                    new_used_eel_pl = curr_used_eel_pl  # EL不改变已用EEL/PL链路集
+
+                # 4. 软约束计算：更新链路使用统计和总重叠数
+                # 复制前驱的链路使用统计（避免修改原字典）
+                prev_link_count = state_prev[(curr_node, curr_used_eel_pl, curr_overlap, curr_hops)][1]
+                new_link_count = defaultdict(int, prev_link_count)
+
+                # 遍历当前边的所有G0链路，更新使用次数
+                for link in edge_g0_links:
+                    new_link_count[link] += 1
+
+                # 计算新的总重叠数：总使用数 - 唯一数
+                total_used = sum(new_link_count.values())
+                unique_used = len(new_link_count)
+                new_overlap = total_used - unique_used
+
+                # 软约束检查：重叠数超限则跳过
+                if new_overlap > overlap_num:
+                    continue
+
+                # 5. 状态更新与剪枝
+                new_state = (neighbor, new_used_eel_pl, new_overlap, new_hops)
+                # 若新状态代价更高，跳过
+                if new_cost >= state_cost[new_state]:
+                    continue
+
+                # 更新状态代价和前驱
+                state_cost[new_state] = new_cost
+                # 拼接新路径
+                prev_path = state_prev[(curr_node, curr_used_eel_pl, curr_overlap, curr_hops)][2]
+                new_path = prev_path + [neighbor]
+                state_prev[new_state] = (curr_node, new_link_count, new_path)
+
+                # 加入优先级队列
+                heapq.heappush(pq, (new_cost, neighbor, new_used_eel_pl, new_overlap, new_hops))
+
+        # 返回最优路径（无可行路径则返回None）
+        return best_path
