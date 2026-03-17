@@ -34,6 +34,8 @@ class Simulator:
 
         self.metrics = {
             "blocking_ratio": 0,
+            "bitrate_blocking_ratio": 0,
+            "bit_blocking_ratio": 0,
             "spectrum_usage": 0,
             "avg_hops": 0,
             "avg_otn_switching": 0,
@@ -145,9 +147,19 @@ class Simulator:
 
     def calculate_final_metrics(self):
         """计算最终的指标（基于整个仿真过程的平均值）"""
-        # 阻塞率（保持不变）
+        # 请求阻塞率（保持不变）
         total_demands = len(self.completed_demands) + len(self.blocked_demands)
         self.metrics["blocking_ratio"] = len(self.blocked_demands) / total_demands if total_demands > 0 else 0
+
+        # 带宽阻塞率（保持不变）
+        blocked_bitrate = sum([d.traffic_class.value for d in self.blocked_demands])
+        total_bitrate = sum([d.traffic_class.value for d in (self.completed_demands+self.blocked_demands)])
+        self.metrics["bitrate_blocking_ratio"] = blocked_bitrate / total_bitrate if total_bitrate > 0 else 0
+
+        # 比特阻塞率（保持不变）
+        blocked_bit = sum([d.traffic_class.value*d.holding_time for d in self.blocked_demands])
+        total_bit = sum([d.traffic_class.value*d.holding_time for d in (self.completed_demands + self.blocked_demands)])
+        self.metrics["bit_blocking_ratio"] = blocked_bit / total_bit if total_bit > 0 else 0
 
         # 平均跳数（保持不变）
         total_hops = sum(len(demand.path) - 1 for demand in self.completed_demands if demand.path)

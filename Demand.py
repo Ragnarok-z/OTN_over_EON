@@ -20,3 +20,4 @@ class Demand:
 
     def set_departure_time(self, holding_time):
         self.departure_time = self.arrival_time + holding_time
+        self.holding_time = holding_time

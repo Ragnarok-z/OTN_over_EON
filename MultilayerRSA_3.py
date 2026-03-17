@@ -45,7 +45,7 @@ def run_experiments(topology_file, output_dir="results"):
 
     # 是否使用新算法
     sp_algo = "LOC-SP-algo"
-    overlap_num = 15
+    overlap_num = 1
 
     calc_E_k = 5
     E_loaded = None  # 提前定义

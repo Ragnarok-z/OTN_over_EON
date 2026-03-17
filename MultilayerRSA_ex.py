@@ -6,7 +6,7 @@ from Network import Network
 from Simulator import Simulator
 from Tool import get_next_exp_number
 
-from ExtendedSimulator import *
+import pickle
 
 def run_experiments(topology_file, output_dir="results"):
     # Create output directory if it doesn't exist
@@ -25,30 +25,43 @@ def run_experiments(topology_file, output_dir="results"):
     traffic_intensities = range(300, 510, 50)
 
     # Define number of demand
-    num_demands = 20000
+    num_demands = 30000
 
     # Defind random seed
     random_seed = 423
 
     # Define policies to test
-    policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
+    # policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
-    policies = ["MinEn", "MinPB"]
+    policies = ["MinEn", "MinPB","OneFrag"]
+    # policies = ["MinEn", "MinPB"]
 
     # 选择在G0层面的K最短路内进行路由
     K = 3
+
+    # 是否考虑双层碎片
+    # include_OTN_frag = "OEFM"
+    include_OTN_frag = None
+
+    # 是否使用新算法
+    sp_algo = "LOC-SP-algo"
+    overlap_num = 0
+
+    calc_E_k = 5
+    E_loaded = None  # 提前定义
+    with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
+        E_loaded = pickle.load(f)
 
     # Define defragmentation params
     defarg_params = {
         "en":False
     }
 
-    # CAG中最大平行PL数量
-    maxnum_PL = 5
-
     # Initialize results storage
     results = {policy: {
         "blocking_ratio": [],
+        "bitrate_blocking_ratio": [],
+        "bit_blocking_ratio": [],
         "avg_hops": [],
         "avg_otn_switching": [],
         "multi_demand_lightpath_ratio": [],
@@ -56,22 +69,18 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
+    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}"
+    print("Exp description",results['description'])
+
     # Run simulations for each traffic intensity and policy
     for policy in policies:
         print(f"  Testing policy: {policy}")
         for intensity in traffic_intensities:
-            # print(f"Running simulations for traffic intensity: {intensity} Erlang")
-            #
-            # # Create a new simulator for each run to ensure clean state
-            # simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir)
-            # simulator.run(policy=policy,K=K)
+            print(f"Running simulations for traffic intensity: {intensity} Erlang")
 
-            print(f"Running extended simulations for traffic intensity: {intensity} Erlang")
-
-            network = Network(topology_file)
-            simulator = ExtendedSimulator(network, intensity, num_demands, random_seed, defarg_params, output_dir, K, maxnum_PL)
-
-            simulator.run()
+            # Create a new simulator for each run to ensure clean state
+            simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir,overlap_num,sp_algo)
+            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded)
 
             # Store results
             metrics = simulator.get_metrics()
