@@ -7,9 +7,9 @@ from params import *
 import numpy as np
 from collections import defaultdict, deque
 
-import numba as nb
+# import numba as nb
 
-import numba_func
+# import numba_func
 
 class Network:
     def __init__(self, topology_file):

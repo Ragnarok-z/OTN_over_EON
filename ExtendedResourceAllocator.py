@@ -1,5 +1,5 @@
 from ExtendCAG import ExtendedCAG
-from Tool import *
+from zzg_code.Tool import *
 
 
 class ExtendedResourceAllocator:

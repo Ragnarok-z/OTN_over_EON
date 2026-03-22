@@ -8,25 +8,26 @@ from Tool import get_next_exp_number
 
 import pickle
 
-def run_experiments(topology_file, output_dir="results"):
+def run_experiments(output_dir="results"):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
     # 获取下一个实验编号并创建子目录
     exp_number = get_next_exp_number(output_dir)
-
     output_dir = os.path.join(output_dir, f"exp_{exp_number}")
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Results will be saved to: {output_dir}")
     # Load network topology
+    topology = 'nsfnet'
+    topology_file = '../topology/'+topology+'.txt'
     network = Network(topology_file)
 
     # Define traffic intensities (Erlang)
-    traffic_intensities = range(300, 510, 50)
+    traffic_intensities = [erl for erl in range(300, 790, 50)]
 
     # Define number of demand
-    num_demands = 30000
+    num_demands = 10000
 
     # Defind random seed
     random_seed = 423
@@ -41,17 +42,16 @@ def run_experiments(topology_file, output_dir="results"):
     K = 3
 
     # 是否考虑双层碎片
-    # include_OTN_frag = "OEFM"
-    include_OTN_frag = None
+    include_OTN_frag = "OEFM"
+    # include_OTN_frag = None
 
     # 是否使用新算法
     sp_algo = "LOC-SP-algo"
-
-    overlap_num = 15
+    overlap_num = 0
 
     calc_E_k = 5
     E_loaded = None  # 提前定义
-    with open(f'pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
+    with open(f'../pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
         E_loaded = pickle.load(f)
 
     # Define defragmentation params
@@ -71,7 +71,8 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
-    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}"
+    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}, topology={topology}"
+    results['traffic_intensities'] = traffic_intensities
     print("Exp description",results['description'])
 
     # Run simulations for each traffic intensity and policy
@@ -178,6 +179,5 @@ def run_experiments(topology_file, output_dir="results"):
 # Example usage
 if __name__ == "__main__":
     # In practice, you would have a real topology file
-    topology_file = 'topology/nsfnet.txt'
-    output_dir = "results"
-    run_experiments(topology_file=topology_file, output_dir=output_dir)
+    output_dir = "../results"
+    run_experiments(output_dir=output_dir)

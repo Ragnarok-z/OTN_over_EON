@@ -1,4 +1,4 @@
-from Simulator import Simulator
+from zzg_code.Simulator import Simulator
 from ExtendedResourceAllocator import ExtendedResourceAllocator
 from Defragmentation import DefragmentationEngine
 

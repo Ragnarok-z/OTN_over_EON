@@ -72,6 +72,9 @@ def generate_analyse_excel(
 
         # 移除description字段（如果存在）
         exp_data.pop("description", None)
+        if 'traffic_intensity' in exp_data:
+            traffic_intensity = exp_data['traffic_intensity']
+        exp_data.pop("traffic_intensity", None)
 
         # 遍历场景和指标，验证并收集数据
         for scene, metric_dict in exp_data.items():

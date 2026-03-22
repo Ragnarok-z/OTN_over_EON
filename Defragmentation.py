@@ -1,9 +1,8 @@
 from collections import defaultdict
-import heapq
-from typing import List, Set, Tuple, Dict
-from Lightpath import Lightpath
-from Demand import Demand
-from Network import Network
+from typing import List, Tuple, Dict
+from zzg_code.Lightpath import Lightpath
+from zzg_code.Demand import Demand
+from zzg_code.Network import Network
 # from Simulator import Simulator
 
 class DefragmentationEngine:
