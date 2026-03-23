@@ -92,7 +92,7 @@ if __name__ == "__main__":
         print(e)
     print('\n\n\n\n')
 
-    E_path = 'pre_calc_E'
+    E_path = '../pre_calc_E'
     with open(f'{E_path}/E_N{max_N}_M{M}_K{max_K}.pkl', 'wb') as f:
         pickle.dump(E, f)
 

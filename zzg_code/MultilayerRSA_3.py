@@ -8,7 +8,7 @@ from Tool import get_next_exp_number
 
 import pickle
 
-def run_experiments(topology_file, output_dir="results"):
+def run_experiments(output_dir="results"):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
@@ -19,6 +19,10 @@ def run_experiments(topology_file, output_dir="results"):
 
     print(f"Results will be saved to: {output_dir}")
     # Load network topology
+    # topology = 'nsfnet'
+    # topology = 'cost_239'
+    topology = 'USNET'
+    topology_file = '../topology/'+topology+'.txt'
     network = Network(topology_file)
 
     # Define traffic intensities (Erlang)
@@ -33,7 +37,7 @@ def run_experiments(topology_file, output_dir="results"):
     # Define policies to test
     # policies = ["MinEn", "MaxMux", "MaxSE", "MinPB"]
     # policies = ["MaxMux", "MaxSE", "MinPB"]
-    policies = ["MinEn", "MinPB","OneFrag"]
+    policies = ["MinPB","OneFrag"]
     # policies = ["MinEn", "MinPB"]
 
     # 选择在G0层面的K最短路内进行路由
@@ -45,6 +49,8 @@ def run_experiments(topology_file, output_dir="results"):
 
     # 是否使用新算法
     sp_algo = "LOC-SP-algo"
+    # sp_algo = "base"
+
     overlap_num = 3
 
     calc_E_k = 5
@@ -69,7 +75,7 @@ def run_experiments(topology_file, output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
-    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}"
+    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}, topology={topology}"
     results['traffic_intensities'] = traffic_intensities
     print("Exp description",results['description'])
 
@@ -177,6 +183,5 @@ def run_experiments(topology_file, output_dir="results"):
 # Example usage
 if __name__ == "__main__":
     # In practice, you would have a real topology file
-    topology_file = '../topology/nsfnet.txt'
     output_dir = "../results"
-    run_experiments(topology_file=topology_file, output_dir=output_dir)
+    run_experiments(output_dir=output_dir)

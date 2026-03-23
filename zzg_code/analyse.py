@@ -72,9 +72,9 @@ def generate_analyse_excel(
 
         # 移除description字段（如果存在）
         exp_data.pop("description", None)
-        if 'traffic_intensity' in exp_data:
-            traffic_intensity = exp_data['traffic_intensity']
-        exp_data.pop("traffic_intensity", None)
+        if 'traffic_intensities' in exp_data:
+            traffic_intensity = exp_data['traffic_intensities']
+        exp_data.pop("traffic_intensities", None)
 
         # 遍历场景和指标，验证并收集数据
         for scene, metric_dict in exp_data.items():
@@ -131,13 +131,28 @@ if __name__ == "__main__":
     # 1. 定义实验列表（实验ID + 实验名称）
     exp_name_list = [
         # (87, "baseline"),
-        (86, "OEFM_algo_15"),
+        # (86, "OEFM_algo_15"),
         # (88, "OEFM"),
-        (89, "OEFM_algo_1"),
+        # (89, "OEFM_algo_1"),
         # (90, "OEFM_algo_0"),
         # 下面的实验均新增了比特率阻塞率与比特阻塞率两个指标
         # (91, "baseline"),
         # (92, "OEFM_algo_15"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (93, "OEFM_algo_0"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (94, "OEFM_algo_1"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (95, "OEFM_algo_3"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (96, "OEFM_algo_5"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (97, "baseline"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (98, "c_baseline"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (99, "c_OEFM_algo_1"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (100, "c_OEFM_algo_3"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (99, "c_OEFM_algo_5"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (99, "c_OEFM_algo_10"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (100, "c_OEFM_algo_15"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        (104, "u_baseline"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (99, "u_OEFM_algo_1"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        (96, "u_OEFM_algo_3"),  # 新增了比特率阻塞率与比特阻塞率两个指标
+        # (100, "u_OEFM_algo_5"),  # 新增了比特率阻塞率与比特阻塞率两个指标
 
     ]
 
