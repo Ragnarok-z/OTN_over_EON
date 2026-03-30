@@ -19,8 +19,8 @@ def run_experiments(output_dir="results"):
 
     print(f"Results will be saved to: {output_dir}")
     # Load network topology
-    topology = 'nsfnet'
-    # topology = 'cost_239'
+    # topology = 'nsfnet'
+    topology = 'cost_239'
     # topology = 'USNET'
     topology_file = '../topology/'+topology+'.txt'
     network = Network(topology_file)
@@ -29,7 +29,7 @@ def run_experiments(output_dir="results"):
     traffic_intensities = [erl for erl in range(300, 760, 50)]
 
     # Define number of demand
-    num_demands = 30000
+    num_demands = 10000
 
     # Defind random seed
     random_seed = 423
@@ -44,20 +44,26 @@ def run_experiments(output_dir="results"):
     K = 3
 
     # 是否考虑双层碎片
-    include_OTN_frag = "OEFM"
+    # include_OTN_frag = "OEFM"
     # include_OTN_frag = "OFM"
+    include_OTN_frag = "EONz"
+    # include_OTN_frag = "ABP"
     # include_OTN_frag = None
 
     # 是否使用新算法
-    # sp_algo = "LOC-SP-algo"
-    sp_algo = "base"
+    sp_algo = "LOC-SP-algo"
+    # sp_algo = "base"
 
-    overlap_num = 0
+    overlap_num = 3
 
     calc_E_k = 5
     E_loaded = None  # 提前定义
     with open(f'../pre_calc_E/E_N{800}_M{40}_K{10}.pkl', 'rb') as f:
         E_loaded = pickle.load(f)
+
+    Ez_loaded = None  # 提前定义
+    with open(f'../pre_calc_E/Ez_N{800}_M{19}_K{10}.pkl', 'rb') as f:
+        Ez_loaded = pickle.load(f)
 
     # Define defragmentation params
     defarg_params = {
@@ -88,7 +94,7 @@ def run_experiments(output_dir="results"):
 
             # Create a new simulator for each run to ensure clean state
             simulator = Simulator(Network(topology_file), intensity, num_demands, random_seed, defarg_params,output_dir,overlap_num,sp_algo)
-            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded)
+            simulator.run(policy=policy, K=K, include_OTN_frag=include_OTN_frag, calc_E_k=calc_E_k, E_loaded=E_loaded, Ez_loaded=Ez_loaded)
 
             # Store results
             metrics = simulator.get_metrics()

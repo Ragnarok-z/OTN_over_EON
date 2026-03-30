@@ -81,7 +81,7 @@ class Simulator:
         # print([(x.event_type,x.time,x.demand) for x in  self.event_queue[0:5]])
 
 
-    def run(self, policy="MinPB", K=3, max_hops=5, include_OTN_frag=False, calc_E_k=5, E_loaded=None):
+    def run(self, policy="MinPB", K=3, max_hops=5, include_OTN_frag=False, calc_E_k=5, E_loaded=None, Ez_loaded=None):
         # 记录初始状态
         self.record_metrics()
 
@@ -90,7 +90,7 @@ class Simulator:
             # print(self.current_time)
 
             if event.event_type == EventType.ARRIVAL:
-                self.process_arrival(event.demand, policy, K, max_hops, include_OTN_frag, calc_E_k, E_loaded)
+                self.process_arrival(event.demand, policy, K, max_hops, include_OTN_frag, calc_E_k, E_loaded, Ez_loaded)
             else:
                 self.process_departure(event.demand)
 
@@ -224,10 +224,10 @@ class Simulator:
         return total_weighted_sum / total_time if total_time > 0 else 0
 
     # 原有的 process_arrival, process_departure 等方法保持不变
-    def process_arrival(self, demand, policy, K, max_hops, include_OTN_frag=False, calc_E_k=5, E_loaded=None):
+    def process_arrival(self, demand, policy, K, max_hops, include_OTN_frag=False, calc_E_k=5, E_loaded=None, Ez_loaded=None):
         # Build CAG for this demand
 
-        cag = CAG(self.network, demand, K, include_OTN_frag, calc_E_k, E_loaded)
+        cag = CAG(self.network, demand, K, include_OTN_frag, calc_E_k, E_loaded, Ez_loaded)
 
         # with open(f'{self.output_dir}/damand{demand.id}_CAG.pkl', 'wb') as f:
         #     pickle.dump(cag, f)

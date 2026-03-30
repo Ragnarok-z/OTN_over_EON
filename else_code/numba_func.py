@@ -71,17 +71,16 @@ def expected_allocated_slots(N, M, p, k):
     return V[N][k]
 
 
-# 测试示例：均匀分布情况
-if __name__ == "__main__":
-    # 示例1: 均匀分布
+def pre_calc_E():
     max_N = 800
     M = 40
     max_K = 10
 
     # 均匀分布: p(i) = 1/40
-    p_uniform = np.array([1 / M] * M, dtype=float)
+    p_uniform = np.array([1 / M] * (M+1), dtype=float)
+    p_uniform[0] = 0
 
-    E = np.zeros((max_N+1,max_K+1),dtype=float)
+    # E = np.zeros((max_N+1,max_K+1),dtype=float)
     E = [[0.0]*11 for _ in range(max_N+1)]
     for N in range(max_N+1):
         for k in range(max_K+1):
@@ -101,6 +100,44 @@ if __name__ == "__main__":
         E_loaded = pickle.load(f)
     for e in E_loaded:
         print(e)
+
+def pre_calc_Ez():
+    max_N = 800
+    Mz = 19
+    max_K = 10
+
+    p_uniform_z = np.array([0,
+                            1/3/8, 1/3/8, 1/3/8, 1/3/8, 1/3/8, 1/3/8, 1/3/8, 1/3/8,
+                            1/3/4, 1/3/4, 1/3/4, 1/3/4,
+                            1/3/7, 1/3/7, 1/3/7, 1/3/7, 1/3/7, 1/3/7, 1/3/7
+                            ], dtype=float)
+    # E = np.zeros((max_N+1,max_K+1),dtype=float)
+    E = [[0.0]*11 for _ in range(max_N+1)]
+    for N in range(max_N+1):
+        for k in range(max_K+1):
+            E[N][k] = expected_allocated_slots(N, Mz, p_uniform_z, k)
+            print(f"N={N}, Mz={Mz}, k={k}, 均匀分布时的期望分配时隙数: {E[N][k]:.4f}")
+            # print(f"近似值 20.5*k = {20.5 * k}")
+    for e in E:
+        print(e)
+    print('\n\n\n\n')
+
+    E_path = '../pre_calc_E'
+    with open(f'{E_path}/Ez_N{max_N}_M{Mz}_K{max_K}.pkl', 'wb') as f:
+        pickle.dump(E, f)
+
+    # 加载
+    with open(f'{E_path}/Ez_N{max_N}_M{Mz}_K{max_K}.pkl', 'rb') as f:
+        E_loaded = pickle.load(f)
+    for e in E_loaded:
+        print(e)
+
+# 测试示例：均匀分布情况
+if __name__ == "__main__":
+    pre_calc_E()
+    pre_calc_Ez()
+    # 示例1: 均匀分布
+
 
     # # 示例2: 几何分布(截断)
     # print("\n--- 几何分布示例 ---")

@@ -7,7 +7,7 @@ from collections import defaultdict, deque
 from params import *
 
 class CAG:
-    def __init__(self, network, demand, K=3, include_OTN_frag=False, calc_E_k=5, E_loaded=None):
+    def __init__(self, network, demand, K=3, include_OTN_frag=False, calc_E_k=5, E_loaded=None, Ez_loaded=None):
         self.network = network
         self.demand = demand
         self.K = K
@@ -17,6 +17,7 @@ class CAG:
         self.edges = defaultdict(dict)  # {u: {v: edge_info}}
         self.calc_E_k = calc_E_k
         self.E_loaded = E_loaded
+        self.Ez_loaded = Ez_loaded
         self.build_cag(include_OTN_frag)
 
     def build_cag(self, include_OTN_frag=False):
@@ -45,7 +46,7 @@ class CAG:
                 if existing_lps:
                     # Select the best fit (simplified - just take the first one with enough capacity)
                     # completed - selecting the EL that most closely meets the demand’s bandwidth requirements with minimal excess capacity.
-                    if include_OTN_frag:
+                    if include_OTN_frag and include_OTN_frag != 'ABP':
                         # 使用新策略：select_EL函数
                         best_lp = self.select_EL([lp for lp in existing_lps if lp.can_accommodate(self.demand)])
                     else:
@@ -113,7 +114,7 @@ class CAG:
             select = [i for i in range(len(EL_lst))]
             if self.include_OTN_frag == 'OEFM':
                 delta_f_OTN = self.calculate_delta_f_OTN(EL_lst,select, self.calc_E_k)
-            elif self.include_OTN_frag == 'OFM':
+            elif self.include_OTN_frag == 'OFM' or self.include_OTN_frag == 'EONz':
                 delta_f_OTN = self.calculate_delta_f_OFM(EL_lst,select, self.calc_E_k)
             for i, el in enumerate(EL_lst):
                 el_info.append({
@@ -178,6 +179,10 @@ class CAG:
                 delta_f_OTN = self.calculate_delta_f_OTN(eel_lst,select, self.calc_E_k)
             elif self.include_OTN_frag == 'OFM':
                 delta_f_OTN = self.calculate_delta_f_OFM(eel_lst,select, self.calc_E_k)
+            elif self.include_OTN_frag == 'EONz':
+                delta_f_OTN = self.calculate_delta_f_EONz(eel_lst, select)
+            elif self.include_OTN_frag == 'ABP':
+                delta_f_OTN = self.calculate_delta_f_ABP(eel_lst, select)
             for i, eel in enumerate(extendable_lps):
                 eel_info.append({
                     'id': i if i > 0 else '000000000000',
@@ -306,7 +311,7 @@ class CAG:
 
         # 计算每个PL的频谱效率和起始频隙
         pl_info = []
-        for pl in pl_list:
+        for i, pl in enumerate(pl_list):
             transponder_mode = pl["transponder_mode"]
             fs_block = pl["fs_block"]
 
@@ -318,16 +323,37 @@ class CAG:
             # 获取起始频隙
             start_fs = fs_block[0]
 
-            pl_info.append({
-                'pl': pl,
-                'spectral_efficiency': spectral_efficiency,
-                'start_fs': start_fs
-            })
+
+            if self.include_OTN_frag=='EONz':
+                pl_info.append({
+                    'pl': pl,
+                    'spectral_efficiency': spectral_efficiency,
+                    'start_fs': start_fs,
+                    'frag': self.calculate_delta_f_EONz_single(pl['path_G0'], pl['fs_block'])
+                })
+            elif self.include_OTN_frag=='ABP':
+                pl_info.append({
+                    'pl': pl,
+                    'spectral_efficiency': spectral_efficiency,
+                    'start_fs': start_fs,
+                    'frag': self.calculate_delta_f_EON(pl['path_G0'], pl['fs_block'], with_before=False)
+                })
+            else:
+                pl_info.append({
+                    'pl': pl,
+                    'spectral_efficiency': spectral_efficiency,
+                    'start_fs': start_fs,
+                    # 'EONz_frag': self.calculate_delta_f_EONz_single(pl.path_in_G0, pl.fs_allocated)
+                })
 
         # 按照选择标准排序：
         # 1. 优先频谱效率高的（降序）
         # 2. 然后起始频隙小的（升序）
-        sorted_pls = sorted(pl_info,
+        if self.include_OTN_frag == 'EONz' or self.include_OTN_frag == 'ABP':
+            sorted_pls = sorted(pl_info,
+                                key=lambda x: (-x['spectral_efficiency'], x['frag'], x['start_fs']))
+        else:
+            sorted_pls = sorted(pl_info,
                             key=lambda x: (-x['spectral_efficiency'], x['start_fs']))
 
         # 返回最优的PL
@@ -339,6 +365,9 @@ class CAG:
     # 计算E
     def calc_E(self, c, n):
         return self.E_loaded[c//10][n]
+
+    def calc_Ez(self, c, n):
+        return self.Ez_loaded[c][n]
 
     # 计算OEFM
     def calc_OEFM(self, k, cap, sumcap, n, posx, sumx):
@@ -395,6 +424,59 @@ class CAG:
             cap[i] += required_cap
         return delta_f_OTN
 
+    def calculate_delta_f_ABP(self, lps, select):
+        path_G0 = lps[0].path_in_G0
+        delta_f_ABP = []
+        for i in select:
+            fs_block = lps[i].fs_allocated
+            delta_f_ABP.append(self.calculate_delta_f_EON(path_G0, fs_block, with_before=False))
+        return delta_f_ABP
+
+    def calculate_delta_f_EONz(self, lps, select):
+        path_G0 = lps[0].path_in_G0
+        delta_f_EONz = []
+        for i in select:
+            fs_block = lps[i].fs_allocated
+            delta_f_EONz.append(self.calculate_delta_f_EONz_single(path_G0, fs_block))
+        return delta_f_EONz
+
+    def calculate_delta_f_EONz_single(self,path_G0, fs_block):
+        """
+        计算建立新光路后的碎片化变化量 Δf
+        """
+        # 计算建立前的ABP
+        # EONz_before = self.calculate_EONz_fragmentation(path_G0)
+
+        # 模拟建立光路（临时占用频谱）
+        # required_fs = transponder_mode["fs_required"]
+        # fs_block = self.network.find_available_fs_block(path_G0, required_fs)
+
+        # if fs_block:
+            # 临时分配频谱
+        self.network.allocate_fs_block(path_G0, fs_block)
+
+        # 计算建立后的ABP
+        EONz_after = self.calculate_EONz_fragmentation(path_G0)
+
+        # 恢复频谱状态
+        self.network.release_fs_block(path_G0, fs_block)
+
+        return EONz_after
+
+        # return 0
+    def calculate_EONz_fragmentation(self, path_G0):
+        fs_usage = np.zeros(768, dtype=bool)
+        for i in range(len(path_G0) - 1):
+            edge = (path_G0[i],path_G0[i+1])
+            fs_usage &= self.network.fs_usage[edge]
+
+        # 找出所有空闲的连续块
+        free_blocks = self._find_free_blocks_(fs_usage)
+
+        res = 0
+        for f in free_blocks:
+            res += f * self.calc_Ez(f, self.calc_E_k) / self.calc_E_k
+        return 1 - res / sum(free_blocks)
 
     # 在CAG.py中添加以下方法
     def calculate_abp_fragmentation(self, path_G0):
@@ -483,12 +565,13 @@ class CAG:
 
         return free_blocks
 
-    def calculate_delta_f_EON(self,path_G0, fs_block):
+    def calculate_delta_f_EON(self,path_G0, fs_block, with_before=True):
         """
         计算建立新光路后的碎片化变化量 Δf
         """
         # 计算建立前的ABP
-        abp_before = self.calculate_abp_fragmentation(path_G0)
+        if with_before:
+            abp_before = self.calculate_abp_fragmentation(path_G0)
 
         # 模拟建立光路（临时占用频谱）
         # required_fs = transponder_mode["fs_required"]
@@ -503,8 +586,10 @@ class CAG:
 
         # 恢复频谱状态
         self.network.release_fs_block(path_G0, fs_block)
-
-        return abp_after - abp_before
+        if with_before:
+            return abp_after - abp_before
+        else:
+            return abp_after
 
         # return 0
 
@@ -531,10 +616,10 @@ class CAG:
             else:
                 delta_f_EON=0
 
-            # if coeffs["cf_OTN"]:
-            #     delta_f_OTN = self.calculate_delta_f_OTN()
+            # if coeffs["cf_EONz"]:
+            #     delta_f_OTNz = self.calculate_delta_f_EONz()
             # else:
-            #     delta_f_OTN = 0
+            #     delta_f_OTNz = 0
 
             u_value = mode["bitrate"]
 
@@ -542,7 +627,7 @@ class CAG:
                     coeffs["c0_new"] +
                     coeffs["c_new"] * h +
                     coeffs["cf_EON"] * delta_f_EON +
-                    # coeffs["cf_OTN"] * delta_f_OTN +
+                    # coeffs["cf_OTNz"] * delta_f_OTNz +
                     coeffs["c_prime"] * h ** 2 +
                     coeffs["cu"] * 10 ** (-u_value)
             ))
