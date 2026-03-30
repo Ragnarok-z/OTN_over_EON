@@ -220,9 +220,12 @@ class Network:
             v = path[i + 1]
             # numba_func.allocate_fs_block(self.fs_usage[u, v], start_fs, end_fs, True)
             # numba_func.allocate_fs_block(self.fs_usage[v, u], start_fs, end_fs, True)
-            for fs in range(start_fs, end_fs + 1):
-                self.fs_usage[(u, v)][fs] = True
-                self.fs_usage[(v, u)][fs] = True
+            # for fs in range(start_fs, end_fs + 1):
+                # self.fs_usage[(u, v)][fs] = True
+                # self.fs_usage[(v, u)][fs] = True
+            # numpy批量赋值加速运行
+            self.fs_usage[(u, v)][start_fs:end_fs + 1] = True
+            self.fs_usage[(v, u)][start_fs:end_fs + 1] = True
 
     # @nb.njit(cache=True)
     def release_fs_block(self, path, fs_block):
@@ -232,9 +235,12 @@ class Network:
             v = path[i + 1]
             # numba_func.allocate_fs_block(self.fs_usage[u, v], start_fs, end_fs, False)
             # numba_func.allocate_fs_block(self.fs_usage[v, u], start_fs, end_fs, False)
-            for fs in range(start_fs, end_fs + 1):
-                self.fs_usage[(u, v)][fs] = False
-                self.fs_usage[(v, u)][fs] = False
+            # for fs in range(start_fs, end_fs + 1):
+                # self.fs_usage[(u, v)][fs] = False
+                # self.fs_usage[(v, u)][fs] = False
+            # numpy批量赋值加速运行
+            self.fs_usage[(u, v)][start_fs:end_fs + 1] = False
+            self.fs_usage[(v, u)][start_fs:end_fs + 1] = False
 
     def find_existing_lightpaths(self, source, destination):
         # Find existing lightpaths between source and destination with available capacity

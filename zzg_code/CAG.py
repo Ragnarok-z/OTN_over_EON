@@ -109,9 +109,12 @@ class CAG:
             return None
 
         el_info = []
-        if self.include_OTN_frag=='OEFM':
+        if self.include_OTN_frag is not None:
             select = [i for i in range(len(EL_lst))]
-            delta_f_OTN = self.calculate_delta_f_OTN(EL_lst,select, self.calc_E_k)
+            if self.include_OTN_frag == 'OEFM':
+                delta_f_OTN = self.calculate_delta_f_OTN(EL_lst,select, self.calc_E_k)
+            elif self.include_OTN_frag == 'OFM':
+                delta_f_OTN = self.calculate_delta_f_OFM(EL_lst,select, self.calc_E_k)
             for i, el in enumerate(EL_lst):
                 el_info.append({
                     id: i if i>0 else '000000000000',
@@ -169,9 +172,12 @@ class CAG:
 
         eel_info = []
         eel_lst = [eel['extended_lightpath'] for eel in extendable_lps]
-        if self.include_OTN_frag=='OEFM':
+        if self.include_OTN_frag is not None:
             select = [i for i in range(len(eel_lst))]
-            delta_f_OTN = self.calculate_delta_f_OTN(eel_lst, select, self.calc_E_k)
+            if self.include_OTN_frag == 'OEFM':
+                delta_f_OTN = self.calculate_delta_f_OTN(eel_lst,select, self.calc_E_k)
+            elif self.include_OTN_frag == 'OFM':
+                delta_f_OTN = self.calculate_delta_f_OFM(eel_lst,select, self.calc_E_k)
             for i, eel in enumerate(extendable_lps):
                 eel_info.append({
                     'id': i if i > 0 else '000000000000',
@@ -345,6 +351,29 @@ class CAG:
             return 0
         return 1 - sum_E / k / calc_E_sumcap
 
+    def calc_OFM(self, k, cap, n):
+        if len(cap) == 1:
+            return 0
+        S = 0
+        for i in range(k):
+            S += cap[i]*self.calc_E(cap[i], n)/n
+        return 1 - S
+
+    def calculate_delta_f_OFM(self, lps, select, n):
+        k = len(lps)
+        cap = [lp.remaining_capacity() for lp in lps]
+
+        f_OTN_base = self.calc_OFM(k, cap, n)
+
+        delta_f_OTN = []
+        required_cap = self.demand.traffic_class.value
+        for i in select:
+            cap[i] -= required_cap
+            delta_f_OTN.append(self.calc_OFM(k, cap, n) - f_OTN_base)
+            cap[i] += required_cap
+        return delta_f_OTN
+
+
     # 计算delta_f_OTN
     def calculate_delta_f_OTN(self, lps, select, n):
 
@@ -502,10 +531,10 @@ class CAG:
             else:
                 delta_f_EON=0
 
-            if coeffs["cf_OTN"]:
-                delta_f_OTN = self.calculate_delta_f_OTN()
-            else:
-                delta_f_OTN = 0
+            # if coeffs["cf_OTN"]:
+            #     delta_f_OTN = self.calculate_delta_f_OTN()
+            # else:
+            #     delta_f_OTN = 0
 
             u_value = mode["bitrate"]
 
@@ -513,7 +542,7 @@ class CAG:
                     coeffs["c0_new"] +
                     coeffs["c_new"] * h +
                     coeffs["cf_EON"] * delta_f_EON +
-                    coeffs["cf_OTN"] * delta_f_OTN +
+                    # coeffs["cf_OTN"] * delta_f_OTN +
                     coeffs["c_prime"] * h ** 2 +
                     coeffs["cu"] * 10 ** (-u_value)
             ))
@@ -565,25 +594,32 @@ class CAG:
                 edge_weight = self.calculate_edge_weight(current_node, neighbor, policy)
 
                 # Create new label
-                new_links = current_label["links"].copy()
+                new_links = set()
                 if edge_info["type"] in ["PL", "EEL"]:
                     # Add all G0 links to the set
                     path_G0 = edge_info.get("path_G0", [])
                     for i in range(len(path_G0) - 1):
-                        new_links.add((path_G0[i], path_G0[i + 1]))
-
+                        # print(path_G0[i], path_G0[i + 1])
+                        new_links.add(tuple(sorted((path_G0[i], path_G0[i + 1]))))
+                # print(current_label['links'])
+                # print(new_links,'\n\n')
                 # Check if any of these links are already used
                 if not new_links.isdisjoint(current_label["links"]):
+                    # print(current_label['links'])
+                    # print(new_links)
+                    # print('confilict\n\n')
                     continue  # Spectrum conflict
-
+                # print(current_label['links'])
+                # print(new_links)
+                # print('not confilict\n\n')
                 new_label = {
                     "node": neighbor,
                     "cost": current_label["cost"] + edge_weight,
-                    "links": new_links,
+                    "links":  current_label['links'] | new_links,
                     "hops": current_label["hops"] + 1,
                     "path": current_label["path"] + [neighbor]
                 }
-
+                # print(source, destination, new_label['hops'])
                 # Check for dominance
                 dominated = False
                 for existing_label in labels[neighbor]:

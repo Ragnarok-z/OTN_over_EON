@@ -19,17 +19,17 @@ def run_experiments(output_dir="results"):
 
     print(f"Results will be saved to: {output_dir}")
     # Load network topology
-    # topology = 'nsfnet'
+    topology = 'nsfnet'
     # topology = 'cost_239'
-    topology = 'USNET'
+    # topology = 'USNET'
     topology_file = '../topology/'+topology+'.txt'
     network = Network(topology_file)
 
     # Define traffic intensities (Erlang)
-    traffic_intensities = [erl for erl in range(300, 790, 50)]
+    traffic_intensities = [erl for erl in range(300, 760, 50)]
 
     # Define number of demand
-    num_demands = 10000
+    num_demands = 30000
 
     # Defind random seed
     random_seed = 423
@@ -44,14 +44,15 @@ def run_experiments(output_dir="results"):
     K = 3
 
     # 是否考虑双层碎片
-    include_OTN_frag = "OEFM"
+    # include_OTN_frag = "OEFM"
+    include_OTN_frag = "OFM"
     # include_OTN_frag = None
 
     # 是否使用新算法
     sp_algo = "LOC-SP-algo"
     # sp_algo = "base"
 
-    overlap_num = 1
+    overlap_num = 3
 
     calc_E_k = 5
     E_loaded = None  # 提前定义
@@ -75,7 +76,7 @@ def run_experiments(output_dir="results"):
         "spectrum_usage":[]
     } for policy in policies}
 
-    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}, topology={topology}"
+    results['description'] = f"include_OTN_frag={include_OTN_frag}, sp_algo={sp_algo}, overlap_num={overlap_num}, topology={topology}, sorted"
     results['traffic_intensities'] = traffic_intensities
     print("Exp description",results['description'])
 
